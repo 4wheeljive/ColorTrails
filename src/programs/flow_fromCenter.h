@@ -13,6 +13,13 @@
 
 namespace colorTrails {
 
+    struct FromCenterParams {
+        float radialStep        = 0.18f;   // how far inward to sample (controls outward speed)
+        float blendFactor       = 0.45f;   // blend factor (0 = keep current, 1 = fully transport)
+    };
+
+    FromCenterParams    fromCenter;
+
     // --- Prepare: nothing to build (geometry is purely radial) ---
 
     static void fromCenterPrepare(float t) {
@@ -31,7 +38,7 @@ namespace colorTrails {
         float fade = fl::powf(fadePerSec, dt);
 
         float step = fromCenter.radialStep;
-        float frac = fromCenter.transportFraction;
+        float frac = fromCenter.blendFactor;
         float inv  = 1.0f - frac;
 
         // Copy live grid to scratch buffer

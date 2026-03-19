@@ -23,11 +23,12 @@
 #include "colorTrailsTypes.h"
 #include "flow_noise.h"
 #include "flow_fromCenter.h"
+#include "flow_directional.h"
 
 namespace colorTrails {
 
     // ═══════════════════════════════════════════════════════════════════
-    //  EMITTER IMPLEMENTATIONS
+    //  EMITTERS
     // ═══════════════════════════════════════════════════════════════════
 
     // Orbiting dots — reads from `orbital`
@@ -103,8 +104,8 @@ namespace colorTrails {
     // Lissajous line — reads from `lissajous`
     static void emitLissajousLine(float t) {
         const float c = (MIN_DIMENSION - 1) * 0.5f;
-        float s = lissajous.endpointSpeed;
-        const float amp = lissajous.lineAmplitude;
+        float s = lissajous.lineSpeed;
+        const float amp = lissajous.lineAmp;
 
         float lx1 = c + (amp + 1.5f) * fl::sinf(t * s * 1.13f + 0.20f);
         float ly1 = c + (amp + 0.5f) * fl::sinf(t * s * 1.71f + 1.30f);
@@ -148,30 +149,30 @@ namespace colorTrails {
         }
     }
 
-
     // ═══════════════════════════════════════════════════════════════════
     //  DISPATCH TABLES
     // ═══════════════════════════════════════════════════════════════════
 
     const EmitterFn EMITTER_RUN[] = {
-        emitOrbitalDots,      // EMITTER_ORBITALDOTS
-        emitSwarmingDots,     // EMITTER_SWARMINGDOTS
-        emitLissajousLine,    // EMITTER_LISSAJOUS
-        emitRainbowBorder,    // EMITTER_BORDERRECT
+        emitOrbitalDots,
+        emitSwarmingDots,
+        emitLissajousLine,
+        emitRainbowBorder,
     };
 
     const FlowPrepFn FLOW_PREPARE[] = {
-        noiseFlowPrepare,     // FLOW_NOISE
-        fromCenterPrepare,    // FLOW_FROMCENTER
+        noiseFlowPrepare,
+        fromCenterPrepare,
+        directionalPrepare,  
     };
 
     const FlowAdvectFn FLOW_ADVECT[] = {
-        noiseFlowAdvect,      // FLOW_NOISE
-        fromCenterAdvect,     // FLOW_FROMCENTER
+        noiseFlowAdvect,  
+        fromCenterAdvect,
+        directionalAdvect,
     };
 
     constexpr uint8_t FLOW_DISPATCH_COUNT = sizeof(FLOW_PREPARE) / sizeof(FLOW_PREPARE[0]);
-
 
     // ═══════════════════════════════════════════════════════════════════
     //  INIT & MAIN LOOP
@@ -209,82 +210,82 @@ namespace colorTrails {
     static void pushFlowDefaultsToCVars() {
         if (vizConfig.flowField == FLOW_NOISE) {
             noiseFlow = NoiseFlowParams{};
-            cXSpeed            = noiseFlow.xSpeed;
-            cYSpeed            = noiseFlow.ySpeed;
-            cXAmplitude        = noiseFlow.xAmplitude;
-            cYAmplitude        = noiseFlow.yAmplitude;
-            cXFrequency        = noiseFlow.xFrequency;
-            cYFrequency        = noiseFlow.yFrequency;
-            cXShift            = noiseFlow.xShift;
-            cYShift            = noiseFlow.yShift;
+            cXSpeed = noiseFlow.xSpeed;
+            cYSpeed = noiseFlow.ySpeed;
+            cXAmp = noiseFlow.xAmp;
+            cYAmp = noiseFlow.yAmp;
+            cXFreq = noiseFlow.xFreq;
+            cYFreq = noiseFlow.yFreq;
+            cXShift = noiseFlow.xShift;
+            cYShift = noiseFlow.yShift;
             ampMod = AmpModParams{};
             cVariationIntensity = ampMod.intensity;
-            cVariationSpeed     = ampMod.speed;
-            cModulateAmplitude  = ampMod.active ? 1 : 0;
+            cVariationSpeed = ampMod.speed;
+            cModulateAmp = ampMod.active ? 1 : 0;
         } else if (vizConfig.flowField == FLOW_FROMCENTER) {
             fromCenter = FromCenterParams{};
-            cRadialStep        = fromCenter.radialStep;
-            cTransportFraction = fromCenter.transportFraction;
+            cRadialStep = fromCenter.radialStep;
+            cBlendFactor = fromCenter.blendFactor;
         }
     }
 
     // Copy cVars into flow field + modulator structs (called every frame)
     static void syncFlowFromCVars() {
         // Noise flow
-        noiseFlow.xSpeed     = cXSpeed;
-        noiseFlow.ySpeed     = cYSpeed;
-        noiseFlow.xAmplitude = cXAmplitude;
-        noiseFlow.yAmplitude = cYAmplitude;
-        noiseFlow.xFrequency = cXFrequency;
-        noiseFlow.yFrequency = cYFrequency;
-        noiseFlow.xShift     = cXShift;
-        noiseFlow.yShift     = cYShift;
-        ampMod.intensity     = cVariationIntensity;
-        ampMod.speed         = cVariationSpeed;
-        ampMod.active        = (cModulateAmplitude > 0);
-        vizConfig.useAmpMod  = ampMod.active;
+        noiseFlow.xSpeed = cXSpeed;
+        noiseFlow.ySpeed  = cYSpeed;
+        noiseFlow.xAmp = cXAmp;
+        noiseFlow.yAmp = cYAmp;
+        noiseFlow.xFreq = cXFreq;
+        noiseFlow.yFreq = cYFreq;
+        noiseFlow.xShift = cXShift;
+        noiseFlow.yShift = cYShift;
+        ampMod.intensity = cVariationIntensity;
+        ampMod.speed = cVariationSpeed;
+        ampMod.active = (cModulateAmp > 0);
+        vizConfig.useAmpMod = ampMod.active;
         // From-center flow
-        fromCenter.radialStep        = cRadialStep;
-        fromCenter.transportFraction = cTransportFraction;
+        fromCenter.radialStep = cRadialStep;
+        fromCenter.blendFactor = cBlendFactor;
     }
 
     // Push emitter + universal defaults into cVars (called on emitter/mode change)
     static void pushDefaultsToCVars() {
         // Universal
-        cFadeRate       = vizConfig.fadeRate;
-        cFlipVertical   = vizConfig.flipVertical;
-        cFlipHorizontal = vizConfig.flipHorizontal;
+        cFadeRate = vizConfig.fadeRate;
+        cFlipY = vizConfig.flipY;
+        cFlipX = vizConfig.flipX;
         // Emitter: orbitalDots
-        cOrbitSpeed     = orbitalDots.orbitSpeed;
-        cColorSpeed     = orbitalDots.colorSpeed;
-        cDotDiam        = orbitalDots.dotDiam;
-        cOrbitDiam      = orbitalDots.orbitDiam;
+        cOrbitSpeed = orbitalDots.orbitSpeed;
+        cColorSpeed = orbitalDots.colorSpeed;
+        cDotDiam = orbitalDots.dotDiam;
+        cOrbitDiam = orbitalDots.orbitDiam;
         // Emitter: swarmingDots
-        cSwarmSpeed     = swarmingDots.swarmSpeed;
-        cSwarmSpread    = swarmingDots.swarmSpread;
+        cSwarmSpeed = swarmingDots.swarmSpeed;
+        cSwarmSpread = swarmingDots.swarmSpread;
         // Emitter: lissajous / borderRect
-        cEndpointSpeed  = lissajous.endpointSpeed;
-        cColorShift     = lissajous.colorShift;
-        cLineAmplitude  = lissajous.lineAmplitude;
+        cLineSpeed = lissajous.lineSpeed;
+        cColorShift = lissajous.colorShift;
+        cLineAmp = lissajous.lineAmp;
     }
 
     // Read cVars into component structs (called every frame)
     static void syncFromCVars() {
-        vizConfig.fadeRate       = cFadeRate;
-        vizConfig.flipVertical   = cFlipVertical;
-        vizConfig.flipHorizontal = cFlipHorizontal;
-        orbitalDots.orbitSpeed       = cOrbitSpeed;
-        orbitalDots.colorSpeed       = cColorSpeed;
-        orbitalDots.dotDiam          = cDotDiam;
-        orbitalDots.orbitDiam        = cOrbitDiam;
-        swarmingDots.swarmSpeed      = cSwarmSpeed;
-        swarmingDots.swarmSpread     = cSwarmSpread;
-        swarmingDots.colorSpeed      = cColorSpeed;
-        swarmingDots.dotDiam         = cDotDiam;
-        lissajous.endpointSpeed  = cEndpointSpeed;
-        lissajous.colorShift     = cColorShift;
-        lissajous.lineAmplitude  = cLineAmplitude;
-        borderRect.colorShift    = cColorShift;
+        vizConfig.fadeRate = cFadeRate;
+        vizConfig.flipY = cFlipY;
+        vizConfig.flipX = cFlipX;
+        orbitalDots.orbitSpeed = cOrbitSpeed;
+        orbitalDots.colorSpeed = cColorSpeed;
+        orbitalDots.dotDiam  = cDotDiam;
+        orbitalDots.orbitDiam = cOrbitDiam;
+        swarmingDots.swarmSpeed = cSwarmSpeed;
+        swarmingDots.swarmSpread = cSwarmSpread;
+        swarmingDots.colorSpeed = cColorSpeed;
+        swarmingDots.dotDiam = cDotDiam;
+        lissajous.lineSpeed = cLineSpeed;
+        lissajous.colorShift = cColorShift;
+        lissajous.lineAmp = cLineAmp;
+        borderRect.colorShift = cColorShift;
         // Flow field + modulator
         syncFlowFromCVars();
     }

@@ -65,11 +65,11 @@ extern uint8_t MODE;
    const char* const COLORTRAILS_PARAMS[] PROGMEM = {
        "fadeRate", "orbitSpeed", "colorSpeed", "dotDiam", "orbitDiam",
        "swarmSpeed", "swarmSpread",
-       "endpointSpeed", "colorShift", "lineAmplitude",
-       "xSpeed", "ySpeed", "xAmplitude", "yAmplitude",
-       "xFrequency", "yFrequency", "xShift", "yShift",
-       "variationIntensity", "variationSpeed", "modulateAmplitude",
-       "radialStep", "transportFraction"
+       "endpointSpeed", "colorShift", "lineAmp",
+       "xSpeed", "ySpeed", "xAmp", "yAmp",
+       "xFreq", "yFreq", "xShift", "yShift",
+       "variationIntensity", "variationSpeed", "modulateAmp",
+       "radialStep", "blendFactor"
    };
 
    // Struct to hold visualizer name and parameter array reference
@@ -199,8 +199,8 @@ float cExpDecayFactor = 0.9f;
 
 //ColorTrails
 float cFadeRate = 0.99922f;
-float cXFrequency = 0.33f;
-float cYFrequency = 0.33f;
+float cXFreq = 0.33f;
+float cYFreq = 0.33f;
 float cOrbitSpeed = 0.35f;
 float cXShift = 1.8f;
 float cYShift = 1.8f;
@@ -209,20 +209,20 @@ float cColorSpeed = 0.10f;
 float cDotDiam = 1.5f;
 float cSwarmSpeed = 0.5f;
 float cSwarmSpread = 1.0f;
-float cEndpointSpeed = 0.35f;
+float cLineSpeed = 0.35f;
 float cColorShift = 0.10f;
-float cLineAmplitude = 13.5f;
-float cXAmplitude = 1.0f;
-float cYAmplitude = 1.0f;
+float cLineAmp = 13.5f;
+float cXAmp = 1.0f;
+float cYAmp = 1.0f;
 float cXSpeed = -1.73f;
 float cYSpeed = -1.72f;
 float cVariationIntensity = 4.0f;
 float cVariationSpeed = 1.0f;
-uint8_t cModulateAmplitude = 1;
-bool cFlipVertical = false;
-bool cFlipHorizontal = false;
+uint8_t cModulateAmp = 1;
+bool cFlipY = false;
+bool cFlipX = false;
 float cRadialStep = 0.18f;
-float cTransportFraction = 0.45f;
+float cBlendFactor = 0.45f;
 
 
 ArduinoJson::JsonDocument sendDoc;
@@ -364,20 +364,20 @@ void sendReceiptString(String receivedID, String receivedValue) {
    X(float, DotDiam, 1.5f) \
    X(float, SwarmSpeed, 0.5f) \
    X(float, SwarmSpread, 1.0f) \
-   X(float, EndpointSpeed, 0.35f) \
+   X(float, LineSpeed, 0.35f) \
    X(float, ColorShift, 0.10f) \
-   X(float, LineAmplitude, 13.5f) \
-   X(float, XFrequency, 0.33f) \
-   X(float, YFrequency, 0.33f) \
+   X(float, LineAmp, 13.5f) \
+   X(float, XFreq, 0.33f) \
+   X(float, YFreq, 0.33f) \
    X(float, XSpeed, -1.73f) \
    X(float, YSpeed, -1.72f) \
-   X(float, XAmplitude, 1.0f) \
-   X(float, YAmplitude, 1.0f) \
+   X(float, XAmp, 1.0f) \
+   X(float, YAmp, 1.0f) \
    X(float, VariationIntensity, 4.0f) \
    X(float, VariationSpeed, 1.0f) \
-   X(uint8_t, ModulateAmplitude, 1) \
+   X(uint8_t, ModulateAmp, 1) \
    X(float, RadialStep, 0.18f) \
-   X(float, TransportFraction, 0.45f)
+   X(float, BlendFactor, 0.45f)
 
 
 // Auto-generated helper functions using X-macros
@@ -711,8 +711,8 @@ void processCheckbox(String receivedID, bool receivedValue ) {
    
    if (receivedID == "cx11") {mappingOverride = receivedValue;};
 
-   if (receivedID == "cx30") {cFlipVertical = receivedValue;};
-   if (receivedID == "cx31") {cFlipHorizontal = receivedValue;};
+   if (receivedID == "cx30") {cFlipY = receivedValue;};
+   if (receivedID == "cx31") {cFlipX = receivedValue;};
 
 }
 

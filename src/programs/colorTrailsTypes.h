@@ -92,8 +92,6 @@ namespace colorTrails {
     }
     */
 
-
-
     // ═══════════════════════════════════════════════════════════════════
     //  NOISE GENERATORS
     // ═══════════════════════════════════════════════════════════════════
@@ -246,7 +244,6 @@ namespace colorTrails {
             }
         }
 
-
     // ═══════════════════════════════════════════════════════════════════
     //  DRAWING PRIMITIVES
     // ═══════════════════════════════════════════════════════════════════
@@ -339,7 +336,6 @@ namespace colorTrails {
         }
     }
 
-
     // ═══════════════════════════════════════════════════════════════════
     //  COMPONENT TYPES & ENUMS
     // ═══════════════════════════════════════════════════════════════════
@@ -356,6 +352,7 @@ namespace colorTrails {
     enum FlowFieldType : uint8_t {
         FLOW_NOISE = 0,
         FLOW_FROMCENTER,
+        FLOW_DIRECTIONAL,
         // future: FLOW_TOCENTER, FLOW_SPIRAL, FLOW_POLARWARP, ...
         FLOW_COUNT
     };
@@ -364,7 +361,6 @@ namespace colorTrails {
     using EmitterFn     = void(*)(float t);
     using FlowPrepFn    = void(*)(float t);
     using FlowAdvectFn  = void(*)(float dt);
-
 
     // ═══════════════════════════════════════════════════════════════════
     //  EMITTERS
@@ -387,21 +383,19 @@ namespace colorTrails {
     };
 
     struct LissajousParams {
-        float endpointSpeed = 0.35f;
+        float lineSpeed     = 0.35f;
         float colorShift    = 0.10f;
-        float lineAmplitude = (MIN_DIMENSION - 4) * 0.75f;
+        float lineAmp       = (MIN_DIMENSION - 4) * 0.75f;
     };
 
     struct BorderRectParams {
         float colorShift = 0.10f;
     };
 
-    // --- Flow field parameter structs ---
-
-    struct FromCenterParams {
-        float radialStep        = 0.18f;   // how far inward to sample (controls outward speed)
-        float transportFraction = 0.45f;   // blend factor (0 = keep current, 1 = fully transport)
-    };
+    
+    // ═══════════════════════════════════════════════════════════════════
+    //  LIVE PARAMETER INSTANCES
+    // ═══════════════════════════════════════════════════════════════════
 
     // Live emitter param instances
     OrbitalDotsParams   orbitalDots;
@@ -410,7 +404,36 @@ namespace colorTrails {
     BorderRectParams    borderRect;
 
     // Live flow field param instances
-    FromCenterParams    fromCenter;
+
+
+
+    // RELOCATE/REFACTOR MODULATOR FUNCTIONALITY BELOW THAT WAS JUST PULLED OUT OF flow_noise.h  
+
+    // --- Amplitude modulator ---
+
+    struct AmpModParams {
+        float intensity = 4.0f;    // Depth of amplitude modulation (0 = off)
+        float speed     = 1.0f;    // Temporal speed of the variation noise
+        bool  active    = false;   // on/off
+    };
+
+    AmpModParams ampMod;
+
+    //  Slow 1D Perlin noise modulates the flow field's xAmplitude/yAmplitude.
+    //  Operates on working copies (does not mutate base noiseFlow params).
+
+    static void applyAmpModulation(float t, float& xAmp, float& yAmp) {
+        if (!ampMod.active) return;
+
+        float nVarX = ampVarX.noise(t * 0.16f * ampMod.speed);
+        float nVarY = ampVarY.noise(t * 0.13f * ampMod.speed + 17.0f);
+
+        float selfMod = 0.5f + 0.5f * ((nVarX + nVarY) * 0.5f);
+        float effVariation = ampMod.intensity * selfMod;
+
+        xAmp = clampf(xAmp + nVarX * 0.45f * effVariation, 0.10f, 1.0f);
+        yAmp = clampf(yAmp + nVarY * 0.45f * effVariation, 0.10f, 1.0f);
+    }
 
 
     // ═══════════════════════════════════════════════════════════════════
@@ -420,8 +443,8 @@ namespace colorTrails {
     struct CtVizConfig {
         // Universal params
         float fadeRate       = 0.99922f;
-        bool  flipVertical   = false;
-        bool  flipHorizontal = false;
+        bool  flipY          = false;
+        bool  flipX          = false;
 
         // Active component selections
         EmitterType   emitter   = EMITTER_ORBITALDOTS;  // tied to / selected by MODE

@@ -13,56 +13,19 @@
 
 namespace colorTrails {
 
-    // --- Parameter struct ---
-
     struct NoiseFlowParams {
-        float xSpeed     = -1.73f;   // Noise scroll speed  (column axis)
-        float ySpeed     = -1.72f;   // Noise scroll speed  (row axis)
-        float xAmplitude =  1.00f;   // Noise amplitude     (column axis)
-        float yAmplitude =  1.00f;   // Noise amplitude     (row axis)
-        float xFrequency =  0.33f;   // Noise spatial scale (column axis) (aka "xScale")
-        float yFrequency =  0.32f;   // Noise spatial scale (row axis) (aka "yScale")
+        float xSpeed     = -1.00f;   // Noise scroll speed  (column axis)
+        float ySpeed     = -1.00f;   // Noise scroll speed  (row axis)
+        float xAmp       =  1.00f;   // Noise amplitude     (column axis)
+        float yAmp       =  1.00f;   // Noise amplitude     (row axis)
+        float xFreq      =  0.33f;   // Noise spatial scale (column axis) (aka "xScale")
+        float yFreq      =  0.32f;   // Noise spatial scale (row axis) (aka "yScale")
         float xShift     =  1.8f;    // Max horizontal shift per row  (pixels)
         float yShift     =  1.8f;    // Max vertical shift per column (pixels)
-        bool  use2DNoise =  true;    // false = 1D Perlin, true = 2D Perlin
+        //bool  use2DNoise =  true;    // false = 1D Perlin, true = 2D Perlin
     };
-
-    // Live flow field param instance
-    NoiseFlowParams noiseFlow;
-
-    // Reference: previous per-emitter noise defaults (before decoupling)
-    //                      xSpeed, ySpeed, xAmp, yAmp, xFreq, yFreq, xShft, yShft, 2D noise
-    // Orbital:    noiseFlow{-1.73f, -1.72f, 1.0f, 1.0f, 0.33f, 0.32f, 1.8f, 1.8f, true};
-    // Lissajous:  noiseFlow{0.1f, 0.1f,   1.0f, 1.0f, 0.33f, 0.32f, 1.8f, 1.8f, true};
-    // BorderRect: noiseFlow{-1.73f, -1.72f, 0.75f, 0.75f, 0.33f, 0.32f, 1.8f, 1.8f, true};
-
-
-    // --- Amplitude modulator ---
-
-    struct AmpModParams {
-        float intensity = 4.0f;    // Depth of amplitude modulation (0 = off)
-        float speed     = 1.0f;    // Temporal speed of the variation noise
-        bool  active    = false;   // on/off
-    };
-
-    AmpModParams ampMod;
-
-    //  Slow 1D Perlin noise modulates the flow field's xAmplitude/yAmplitude.
-    //  Operates on working copies (does not mutate base noiseFlow params).
-
-    static void applyAmpModulation(float t, float& xAmp, float& yAmp) {
-        if (!ampMod.active) return;
-
-        float nVarX = ampVarX.noise(t * 0.16f * ampMod.speed);
-        float nVarY = ampVarY.noise(t * 0.13f * ampMod.speed + 17.0f);
-
-        float selfMod = 0.5f + 0.5f * ((nVarX + nVarY) * 0.5f);
-        float effVariation = ampMod.intensity * selfMod;
-
-        xAmp = clampf(xAmp + nVarX * 0.45f * effVariation, 0.10f, 1.0f);
-        yAmp = clampf(yAmp + nVarY * 0.45f * effVariation, 0.10f, 1.0f);
-    }
-
+   
+    NoiseFlowParams     noiseFlow;
 
     // --- Profile builders ---
 
@@ -86,40 +49,39 @@ namespace colorTrails {
         }
     }
 
-
     // --- Prepare: build noise profiles, apply modulator, apply flips ---
 
     static void noiseFlowPrepare(float t) {
         // Working copies of amplitude (modulator may alter these)
-        float workXAmp = noiseFlow.xAmplitude;
-        float workYAmp = noiseFlow.yAmplitude;
+        float workXAmp = noiseFlow.xAmp;
+        float workYAmp = noiseFlow.yAmp;
 
         if (vizConfig.useAmpMod) {
             applyAmpModulation(t, workXAmp, workYAmp);
         }
 
         // Build noise profiles
-        if (noiseFlow.use2DNoise) {
+       // if (noiseFlow.use2DNoise) {
             sampleProfile2D(noise2X, t, noiseFlow.xSpeed, workXAmp,
-                            noiseFlow.xFrequency, WIDTH,  xProf);
+                            noiseFlow.xFreq, WIDTH,  xProf);
             sampleProfile2D(noise2Y, t, noiseFlow.ySpeed, workYAmp,
-                            noiseFlow.yFrequency, HEIGHT, yProf);
-        } else {
+                            noiseFlow.yFreq, HEIGHT, yProf);
+        /*} else {
             sampleProfile1D(noiseX, t, noiseFlow.xSpeed, workXAmp,
-                            noiseFlow.xFrequency, WIDTH,  xProf);
+                            noiseFlow.xFreq, WIDTH,  xProf);
             sampleProfile1D(noiseY, t, noiseFlow.ySpeed, workYAmp,
-                            noiseFlow.yFrequency, HEIGHT, yProf);
-        }
+                            noiseFlow.yFreq, HEIGHT, yProf);
+        }*/
 
         // Apply axis flip toggles
-        if (vizConfig.flipVertical) {
+        if (vizConfig.flipY) {
             for (int i = 0; i < WIDTH / 2; i++) {
                 float tmp = xProf[i];
                 xProf[i] = xProf[WIDTH - 1 - i];
                 xProf[WIDTH - 1 - i] = tmp;
             }
         }
-        if (vizConfig.flipHorizontal) {
+        if (vizConfig.flipX) {
             for (int i = 0; i < HEIGHT / 2; i++) {
                 float tmp = yProf[i];
                 yProf[i] = yProf[HEIGHT - 1 - i];
@@ -127,7 +89,6 @@ namespace colorTrails {
             }
         }
     }
-
 
     // --- Advect: two-pass fractional advection (bilinear interpolation) + fade ---
 
