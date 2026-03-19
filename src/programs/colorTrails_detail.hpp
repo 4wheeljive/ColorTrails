@@ -22,6 +22,7 @@
 #include "bleControl.h"
 #include "colorTrailsTypes.h"
 #include "flow_noise.h"
+#include "flow_fromCenter.h"
 
 namespace colorTrails {
 
@@ -161,10 +162,12 @@ namespace colorTrails {
 
     const FlowPrepFn FLOW_PREPARE[] = {
         noiseFlowPrepare,     // FLOW_NOISE
+        fromCenterPrepare,    // FLOW_FROMCENTER
     };
 
     const FlowAdvectFn FLOW_ADVECT[] = {
         noiseFlowAdvect,      // FLOW_NOISE
+        fromCenterAdvect,     // FLOW_FROMCENTER
     };
 
     constexpr uint8_t FLOW_DISPATCH_COUNT = sizeof(FLOW_PREPARE) / sizeof(FLOW_PREPARE[0]);
@@ -204,23 +207,30 @@ namespace colorTrails {
 
     // Push flow field struct defaults into cVars (called on flow field change)
     static void pushFlowDefaultsToCVars() {
-        noiseFlow = NoiseFlowParams{};
-        cXSpeed            = noiseFlow.xSpeed;
-        cYSpeed            = noiseFlow.ySpeed;
-        cXAmplitude        = noiseFlow.xAmplitude;
-        cYAmplitude        = noiseFlow.yAmplitude;
-        cXFrequency        = noiseFlow.xFrequency;
-        cYFrequency        = noiseFlow.yFrequency;
-        cXShift            = noiseFlow.xShift;
-        cYShift            = noiseFlow.yShift;
-        ampMod = AmpModParams{};
-        cVariationIntensity = ampMod.intensity;
-        cVariationSpeed     = ampMod.speed;
-        cModulateAmplitude  = ampMod.active ? 1 : 0;
+        if (vizConfig.flowField == FLOW_NOISE) {
+            noiseFlow = NoiseFlowParams{};
+            cXSpeed            = noiseFlow.xSpeed;
+            cYSpeed            = noiseFlow.ySpeed;
+            cXAmplitude        = noiseFlow.xAmplitude;
+            cYAmplitude        = noiseFlow.yAmplitude;
+            cXFrequency        = noiseFlow.xFrequency;
+            cYFrequency        = noiseFlow.yFrequency;
+            cXShift            = noiseFlow.xShift;
+            cYShift            = noiseFlow.yShift;
+            ampMod = AmpModParams{};
+            cVariationIntensity = ampMod.intensity;
+            cVariationSpeed     = ampMod.speed;
+            cModulateAmplitude  = ampMod.active ? 1 : 0;
+        } else if (vizConfig.flowField == FLOW_FROMCENTER) {
+            fromCenter = FromCenterParams{};
+            cRadialStep        = fromCenter.radialStep;
+            cTransportFraction = fromCenter.transportFraction;
+        }
     }
 
     // Copy cVars into flow field + modulator structs (called every frame)
     static void syncFlowFromCVars() {
+        // Noise flow
         noiseFlow.xSpeed     = cXSpeed;
         noiseFlow.ySpeed     = cYSpeed;
         noiseFlow.xAmplitude = cXAmplitude;
@@ -233,6 +243,9 @@ namespace colorTrails {
         ampMod.speed         = cVariationSpeed;
         ampMod.active        = (cModulateAmplitude > 0);
         vizConfig.useAmpMod  = ampMod.active;
+        // From-center flow
+        fromCenter.radialStep        = cRadialStep;
+        fromCenter.transportFraction = cTransportFraction;
     }
 
     // Push emitter + universal defaults into cVars (called on emitter/mode change)

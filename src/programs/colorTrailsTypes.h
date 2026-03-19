@@ -355,8 +355,8 @@ namespace colorTrails {
 
     enum FlowFieldType : uint8_t {
         FLOW_NOISE = 0,
-        FLOW_SPIRAL,
-        // future: FLOW_CENTER, FLOW_OUTWARD, FLOW_POLARWARP, ...
+        FLOW_FROMCENTER,
+        // future: FLOW_TOCENTER, FLOW_SPIRAL, FLOW_POLARWARP, ...
         FLOW_COUNT
     };
 
@@ -396,11 +396,21 @@ namespace colorTrails {
         float colorShift = 0.10f;
     };
 
+    // --- Flow field parameter structs ---
+
+    struct FromCenterParams {
+        float radialStep        = 0.18f;   // how far inward to sample (controls outward speed)
+        float transportFraction = 0.45f;   // blend factor (0 = keep current, 1 = fully transport)
+    };
+
     // Live emitter param instances
     OrbitalDotsParams   orbitalDots;
     SwarmingDotsParams  swarmingDots;
     LissajousParams     lissajous;
     BorderRectParams    borderRect;
+
+    // Live flow field param instances
+    FromCenterParams    fromCenter;
 
 
     // ═══════════════════════════════════════════════════════════════════
@@ -415,7 +425,7 @@ namespace colorTrails {
 
         // Active component selections
         EmitterType   emitter   = EMITTER_ORBITALDOTS;  // tied to / selected by MODE
-        FlowFieldType flowField = FLOW_NOISE; // only option for now;
+        FlowFieldType flowField = FLOW_FROMCENTER; // FLOW_NOISE
                                               // will add new UI panel w/ buttons to select
 
         // Active modulators

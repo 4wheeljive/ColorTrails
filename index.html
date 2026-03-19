@@ -930,14 +930,17 @@
             variationSpeed: {min: 0, max: 4, default: 1, step: 0.1},
             modulateAmplitude: {min: 0, max: 1, default: 0, step: 1},
 
+            radialStep: {min: 0.01, max: 2, default: 0.18, step: 0.01},
+            transportFraction: {min: 0, max: 1, default: 0.45, step: 0.01},
+
         };
 
         // Visualizer parameter mappings
         const VISUALIZER_PARAMS = {
-            "colortrails-orbitaldots":["fadeRate", "orbitSpeed", "colorSpeed", "dotDiam", "orbitDiam", "swarmSpeed", "swarmSpread", "endpointSpeed", "colorShift", "lineAmplitude", "xSpeed", "ySpeed", "xAmplitude", "yAmplitude", "xFrequency", "yFrequency", "xShift", "yShift", "variationIntensity", "variationSpeed", "modulateAmplitude"],
-            "colortrails-swarmingdots":["fadeRate", "orbitSpeed", "colorSpeed", "dotDiam", "orbitDiam", "swarmSpeed", "swarmSpread", "endpointSpeed", "colorShift", "lineAmplitude", "xSpeed", "ySpeed", "xAmplitude", "yAmplitude", "xFrequency", "yFrequency", "xShift", "yShift", "variationIntensity", "variationSpeed", "modulateAmplitude"],
-            "colortrails-lissajous":["fadeRate", "orbitSpeed", "colorSpeed", "dotDiam", "orbitDiam", "swarmSpeed", "swarmSpread", "endpointSpeed", "colorShift", "lineAmplitude", "xSpeed", "ySpeed", "xAmplitude", "yAmplitude", "xFrequency", "yFrequency", "xShift", "yShift", "variationIntensity", "variationSpeed", "modulateAmplitude"],
-            "colortrails-borderrect":["fadeRate", "orbitSpeed", "colorSpeed", "dotDiam", "orbitDiam", "swarmSpeed", "swarmSpread", "endpointSpeed", "colorShift", "lineAmplitude", "xSpeed", "ySpeed", "xAmplitude", "yAmplitude", "xFrequency", "yFrequency", "xShift", "yShift", "variationIntensity", "variationSpeed", "modulateAmplitude"]
+            "colortrails-orbitaldots":["fadeRate", "orbitSpeed", "colorSpeed", "dotDiam", "orbitDiam", "swarmSpeed", "swarmSpread", "endpointSpeed", "colorShift", "lineAmplitude", "xSpeed", "ySpeed", "xAmplitude", "yAmplitude", "xFrequency", "yFrequency", "xShift", "yShift", "variationIntensity", "variationSpeed", "modulateAmplitude", "radialStep", "transportFraction"],
+            "colortrails-swarmingdots":["fadeRate", "orbitSpeed", "colorSpeed", "dotDiam", "orbitDiam", "swarmSpeed", "swarmSpread", "endpointSpeed", "colorShift", "lineAmplitude", "xSpeed", "ySpeed", "xAmplitude", "yAmplitude", "xFrequency", "yFrequency", "xShift", "yShift", "variationIntensity", "variationSpeed", "modulateAmplitude", "radialStep", "transportFraction"],
+            "colortrails-lissajous":["fadeRate", "orbitSpeed", "colorSpeed", "dotDiam", "orbitDiam", "swarmSpeed", "swarmSpread", "endpointSpeed", "colorShift", "lineAmplitude", "xSpeed", "ySpeed", "xAmplitude", "yAmplitude", "xFrequency", "yFrequency", "xShift", "yShift", "variationIntensity", "variationSpeed", "modulateAmplitude", "radialStep", "transportFraction"],
+            "colortrails-borderrect":["fadeRate", "orbitSpeed", "colorSpeed", "dotDiam", "orbitDiam", "swarmSpeed", "swarmSpread", "endpointSpeed", "colorShift", "lineAmplitude", "xSpeed", "ySpeed", "xAmplitude", "yAmplitude", "xFrequency", "yFrequency", "xShift", "yShift", "variationIntensity", "variationSpeed", "modulateAmplitude", "radialStep", "transportFraction"]
         };
 
         const AUDIO_PARAMETER_REGISTRY = {

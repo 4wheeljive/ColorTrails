@@ -6,6 +6,8 @@ ColorTrails is an ESP32 LED visualization program built on PlatformIO + FastLED.
 
 All parameters are controllable over BLE from a web-based UI served from `index.html`.
 
+Much of the visualization functionality was ported from Python to C++. The original Python files are in the /colorTrailsOrig folder. There is also a TRANSLATION_GUIDE.md that outlines many aspects of the conversion. The ColorTrails architecture has changed dramatically since  TRANSLATION_GUIDE.md was prepared, so certain aspects of the "target landing environment" may be different than described. 
+
 ---
 
 ## Component Architecture

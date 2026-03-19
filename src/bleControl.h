@@ -68,7 +68,8 @@ extern uint8_t MODE;
        "endpointSpeed", "colorShift", "lineAmplitude",
        "xSpeed", "ySpeed", "xAmplitude", "yAmplitude",
        "xFrequency", "yFrequency", "xShift", "yShift",
-       "variationIntensity", "variationSpeed", "modulateAmplitude"
+       "variationIntensity", "variationSpeed", "modulateAmplitude",
+       "radialStep", "transportFraction"
    };
 
    // Struct to hold visualizer name and parameter array reference
@@ -81,10 +82,10 @@ extern uint8_t MODE;
    // String-based lookup table - mirrors JavaScript VISUALIZER_PARAMS
    // Can number values be replace by an array element count?
    const VisualizerParamEntry VISUALIZER_PARAM_LOOKUP[] PROGMEM = {
-      {"colortrails-orbitaldots", COLORTRAILS_PARAMS, 21},
-      {"colortrails-swarmingdots", COLORTRAILS_PARAMS, 21},
-      {"colortrails-lissajous", COLORTRAILS_PARAMS, 21},
-      {"colortrails-borderrect", COLORTRAILS_PARAMS, 21}
+      {"colortrails-orbitaldots", COLORTRAILS_PARAMS, 23},
+      {"colortrails-swarmingdots", COLORTRAILS_PARAMS, 23},
+      {"colortrails-lissajous", COLORTRAILS_PARAMS, 23},
+      {"colortrails-borderrect", COLORTRAILS_PARAMS, 23}
    };
 
   class VisualizerManager {
@@ -220,6 +221,8 @@ float cVariationSpeed = 1.0f;
 uint8_t cModulateAmplitude = 1;
 bool cFlipVertical = false;
 bool cFlipHorizontal = false;
+float cRadialStep = 0.18f;
+float cTransportFraction = 0.45f;
 
 
 ArduinoJson::JsonDocument sendDoc;
@@ -372,7 +375,9 @@ void sendReceiptString(String receivedID, String receivedValue) {
    X(float, YAmplitude, 1.0f) \
    X(float, VariationIntensity, 4.0f) \
    X(float, VariationSpeed, 1.0f) \
-   X(uint8_t, ModulateAmplitude, 1)
+   X(uint8_t, ModulateAmplitude, 1) \
+   X(float, RadialStep, 0.18f) \
+   X(float, TransportFraction, 0.45f)
 
 
 // Auto-generated helper functions using X-macros

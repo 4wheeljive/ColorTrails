@@ -1,7 +1,7 @@
-# ColorTrails: Python → AuroraPortal Translation Guide
+# ColorTrails: Python → ColorTrails Translation Guide
 
 This document defines how to translate Stefan Petrick's Python Pygame sketches
-(`perlin_grid_visualization_*.py`) into AuroraPortal's C++ colorTrails program.
+(`perlin_grid_visualization_*.py`) into C++ ColorTrails program.
 
 ---
 
@@ -10,8 +10,8 @@ This document defines how to translate Stefan Petrick's Python Pygame sketches
 | Role | Path |
 |------|------|
 | Python originals | `colorTrailsOrig/perlin_grid_visualization_*.py` |
-| AuroraPortal detail | `src/programs/colorTrails_detail.hpp` |
-| AuroraPortal header | `src/programs/colorTrails.hpp` |
+| ColorTrails detail | `src/programs/colorTrails_detail.hpp` |
+| ColorTrails header | `src/programs/colorTrails.hpp` |
 | BLE/param registration | `src/bleControl.h` |
 | Web UI | `index.html` |
 | Standalone C++ port (testing) | `C:\...\ColorTrails\src\colorTrails.h` |
@@ -54,10 +54,10 @@ visual impact before making any modification to the shared C++ engine.
 
 ## 3. Math Function Mapping
 
-AuroraPortal uses FastLED's `fl::` namespace. **Always** use `fl::` prefixed
+ColorTrails uses FastLED's `fl::` namespace. **Always** use `fl::` prefixed
 versions; bare `floorf`, `sinf`, etc., cause ambiguity errors.
 
-| Python | C++ (AuroraPortal) |
+| Python | C++ (ColorTrails) |
 |--------|--------------------|
 | `math.floor(x)` | `fl::floorf(x)` |
 | `math.ceil(x)` | `fl::ceilf(x)` |
@@ -243,7 +243,7 @@ params.xScale = cXScale;
 
 ---
 
-## 12. AuroraPortal Integration Checklist
+## 12. ColorTrails Integration Checklist
 
 When adding a new mode or parameter, touch all of these:
 
