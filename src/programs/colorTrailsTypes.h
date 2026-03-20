@@ -8,6 +8,7 @@
 // ═══════════════════════════════════════════════════════════════════
 
 #include <FastLED.h>
+#include "componentEnums.h"
 
 namespace colorTrails {
 
@@ -28,7 +29,7 @@ namespace colorTrails {
     static unsigned long t0;
     static unsigned long lastFrameMs;
     uint8_t lastEmitter = 255;    // force initial setup on first frame
-    uint8_t lastFlowField = 255;  // force initial setup on first frame
+    uint8_t lastFlow = 255;  // force initial setup on first frame
 
 
     // ═══════════════════════════════════════════════════════════════════
@@ -340,22 +341,7 @@ namespace colorTrails {
     //  COMPONENT TYPES & ENUMS
     // ═══════════════════════════════════════════════════════════════════
 
-    enum EmitterType : uint8_t {
-        EMITTER_ORBITALDOTS = 0,
-        EMITTER_SWARMINGDOTS,
-        EMITTER_LISSAJOUS,
-        EMITTER_BORDERRECT,
-        // future: EMITTER_TRIANGLE, ...
-        EMITTER_COUNT
-    };
-
-    enum FlowFieldType : uint8_t {
-        FLOW_NOISE = 0,
-        FLOW_FROMCENTER,
-        FLOW_DIRECTIONAL,
-        // future: FLOW_TOCENTER, FLOW_SPIRAL, FLOW_POLARWARP, ...
-        FLOW_COUNT
-    };
+    // Emitter and Flow enums defined in componentEnums.h
 
     // Function pointer types for dispatch
     using EmitterFn     = void(*)(float t);
@@ -370,7 +356,6 @@ namespace colorTrails {
 
     struct OrbitalDotsParams {
         float orbitSpeed = 3.0f;
-        float colorSpeed = 0.10f;
         float dotDiam = 1.5f;
         float orbitDiam  = 10.f;
     };
@@ -378,18 +363,15 @@ namespace colorTrails {
     struct SwarmingDotsParams {
         float swarmSpeed  = 0.5f;    // overall speed of swarming motion
         float swarmSpread = 1.0f;    // 0 = tight cluster, 1 = normal, >1 = wide spread
-        float colorSpeed  = 0.10f;   // rainbow color cycling
         float dotDiam     = 1.5f;    // dot size
     };
 
     struct LissajousParams {
         float lineSpeed     = 0.35f;
-        float colorShift    = 0.10f;
         float lineAmp       = (MIN_DIMENSION - 4) * 0.75f;
     };
 
     struct BorderRectParams {
-        float colorShift = 0.10f;
     };
 
     
@@ -443,13 +425,14 @@ namespace colorTrails {
     struct CtVizConfig {
         // Universal params
         float fadeRate       = 0.99922f;
+        float colorShift        = 0.10f;
         bool  flipY          = false;
         bool  flipX          = false;
 
         // Active component selections
-        EmitterType   emitter   = EMITTER_ORBITALDOTS;  // tied to / selected by MODE
-        FlowFieldType flowField = FLOW_FROMCENTER; // FLOW_NOISE
-                                              // will add new UI panel w/ buttons to select
+        Emitter   emitter   = EMITTER_ORBITALDOTS;  // tied to / selected by MODE
+        Flow flow = FLOW_FROMCENTER; // FLOW_NOISE
+                                    // will add new UI panel w/ buttons to select
 
         // Active modulators
         bool useAmpMod = true;

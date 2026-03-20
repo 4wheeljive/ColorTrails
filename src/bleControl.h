@@ -16,6 +16,8 @@ Setting numHandles = 60 has worked for 7 characteristics.
 
 #include <string>
 
+#include "componentEnums.h"
+
 #include <FS.h>
 #include "LittleFS.h"
 #define FORMAT_LITTLEFS_IF_FAILED true 
@@ -29,125 +31,123 @@ BusParamSetterFn setBusParam = nullptr;
 typedef float (*BusParamGetterFn)(uint8_t busId, const String& paramName);
 BusParamGetterFn getBusParam = nullptr;
 
-uint8_t dummy = 1;
+//depricating
+//extern uint8_t PROGRAM;
+//extern uint8_t MODE;
 
-extern uint8_t PROGRAM;
-extern uint8_t MODE;
+//add
+extern uint8_t EMITTER;
+extern uint8_t FLOW;
 
-// PROGRAM/MODE FRAMEWORK ****************************************
+// GLOBAL PARAMETERS *******************************
 
-  enum Program : uint8_t {
-      COLORTRAILS = 0,
-      PROGRAM_COUNT
-  };
+const char* const GLOBAL_PARAMS[] PROGMEM = {
+   "fadeRate", "colorShift", "flipY", "flipX"
+};
 
-  // Program names in PROGMEM
-  const char colortrails_str[] PROGMEM = "colortrails";
+const uint8_t GLOBAL_PARAM_COUNT = 4;
 
-  const char* const PROGRAM_NAMES[] PROGMEM = {
-      colortrails_str
-  };
+// EMITTERS ****************************************
 
-  // Mode names in PROGMEM
-   const char orbitaldots_str[] PROGMEM = "orbitaldots";
-   const char swarmingdots_str[] PROGMEM = "swarmingdots";
-   const char lissajous_str[] PROGMEM = "lissajous";
-   const char borderrect_str[] PROGMEM = "borderrect";
+// Emitter names in PROGMEM
+const char orbitaldots_str[] PROGMEM = "orbitaldots";
+const char swarmingdots_str[] PROGMEM = "swarmingdots";
+const char lissajous_str[] PROGMEM = "lissajous";
+const char borderrect_str[] PROGMEM = "borderrect";
 
-   const char* const COLORTRAILS_MODES[] PROGMEM = {
-         orbitaldots_str, swarmingdots_str, lissajous_str, borderrect_str
-      };
-
-   const uint8_t MODE_COUNTS[] = {4};
-
-   // Visualizer parameter mappings - PROGMEM arrays for memory efficiency
-   // Individual parameter arrays for each visualizer
-   const char* const COLORTRAILS_PARAMS[] PROGMEM = {
-       "fadeRate", "orbitSpeed", "colorSpeed", "dotDiam", "orbitDiam",
-       "swarmSpeed", "swarmSpread",
-       "endpointSpeed", "colorShift", "lineAmp",
-       "xSpeed", "ySpeed", "xAmp", "yAmp",
-       "xFreq", "yFreq", "xShift", "yShift",
-       "variationIntensity", "variationSpeed", "modulateAmp",
-       "radialStep", "blendFactor"
+const char* const EMITTERS[] PROGMEM = {
+      orbitaldots_str, swarmingdots_str, lissajous_str, borderrect_str
    };
 
-   // Struct to hold visualizer name and parameter array reference
-   struct VisualizerParamEntry {
-      const char* visualizerName;
-      const char* const* params;
-      uint8_t count;
+const uint8_t EMITTER_COUNTS[] = {4};
+
+// Emitter params
+const char* const ORBITALDOTS_PARAMS[] PROGMEM = {
+   "dotDiam", "orbitSpeed",  "orbitDiam"
+};
+const char* const SWARMINGDOTS_PARAMS[] PROGMEM = {
+   "dotDiam", "swarmSpeed", "swarmSpread"
+};
+const char* const LISSAJOUS_PARAMS[] PROGMEM = {
+   "lineSpeed", "lineAmp"
+};
+const char* const BORDERRECT_PARAMS[] PROGMEM = {};
+
+// Struct to hold emitter name and parameter array reference
+struct EmitterParamEntry {
+   const char* EmitterName;
+   const char* const* params;
+   uint8_t count;
+};
+
+const EmitterParamEntry EMITTER_PARAM_LOOKUP[] PROGMEM = {
+   {"orbitaldots", ORBITALDOTS_PARAMS, 3},
+   {"swarmingdots", SWARMINGDOTS_PARAMS, 3},
+   {"lissajous", LISSAJOUS_PARAMS, 2},
+   {"borderrect", BORDERRECT_PARAMS, 0}
+};
+
+static const EmitterParamEntry* getEmitterParams(uint8_t emitterIdx) {
+      if (emitterIdx >= EMITTER_COUNT) return nullptr;
+      return &EMITTER_PARAM_LOOKUP[emitterIdx];
+}
+
+// FLOW FIELDS ****************************************
+
+// Flow names in PROGMEM
+const char noise_str[] PROGMEM = "noise";
+const char fromcenter_str[] PROGMEM = "fromcenter";
+const char directional_str[] PROGMEM = "directional";
+
+const uint8_t FLOW_COUNTS[] = {3};
+
+const char* const FLOWS[] PROGMEM = {
+      noise_str, fromcenter_str, directional_str
    };
+   
+// Flow field params
+const char* const NOISE_PARAMS[] PROGMEM = {
+   "xSpeed", "ySpeed", "xAmp", "yAmp","xFreq", "yFreq", "xShift", "yShift"
+};
+const char* const FROM_CENTER_PARAMS[] PROGMEM = {
+   "radialStep", "blendFactor"
+};
+const char* const DIRECTIONAL_PARAMS[] PROGMEM = {};
 
-   // String-based lookup table - mirrors JavaScript VISUALIZER_PARAMS
-   // Can number values be replace by an array element count?
-   const VisualizerParamEntry VISUALIZER_PARAM_LOOKUP[] PROGMEM = {
-      {"colortrails-orbitaldots", COLORTRAILS_PARAMS, 23},
-      {"colortrails-swarmingdots", COLORTRAILS_PARAMS, 23},
-      {"colortrails-lissajous", COLORTRAILS_PARAMS, 23},
-      {"colortrails-borderrect", COLORTRAILS_PARAMS, 23}
-   };
+// Struct to hold flow field name and parameter array reference
+struct FlowParamEntry {
+   const char* FlowName;
+   const char* const* params;
+   uint8_t count;
+};
 
-  class VisualizerManager {
-  public:
-      static String getVisualizerName(int programNum, int mode = -1) {
-          if (programNum < 0 || programNum > PROGRAM_COUNT-1) return "";
+const FlowParamEntry FLOW_PARAM_LOOKUP[] PROGMEM = {
+   {"noise", NOISE_PARAMS, 5},
+   {"fromcenter", FROM_CENTER_PARAMS, 2},
+   {"directional", DIRECTIONAL_PARAMS, 0} 
+};
 
-          // Get program name from flash memory
-          char progName[16];
-          ::strcpy(progName,(char*)pgm_read_ptr(&PROGRAM_NAMES[programNum]));
+static const FlowParamEntry* getFlowParams(uint8_t flowIdx) {
+      if (flowIdx >= FLOW_COUNT) return nullptr;
+      return &FLOW_PARAM_LOOKUP[flowIdx];
+}
 
-          if (mode < 0 || MODE_COUNTS[programNum] == 0) {
-              return String(progName);
-          }
+// MODULATOR PARAMS **********************************
+const char* const MODULATOR_PARAMS[] PROGMEM = {
+      "variationIntensity", "variationSpeed", "modulateAmp"
+};   
 
-          // Get mode name
-          const char* const* modeArray = nullptr;
-          switch (programNum) {
-              case COLORTRAILS: modeArray = COLORTRAILS_MODES; break;
-              default: return String(progName);
-          }
+// AUDIO SETTINGS ==================================================
 
-          if (mode >= MODE_COUNTS[programNum]) return String(progName);
+const char* const AUDIO_PARAMS[] PROGMEM = {
+"maxBins", "audioFloor", "audioGain",
+"avLevelerTarget", "autoFloorAlpha", "autoFloorMin", "autoFloorMax",
+"noiseGateOpen", "noiseGateClose",
+"threshold", "minBeatInterval",
+"rampAttack", "rampDecay", "peakBase", "expDecayFactor"
+};
 
-          char modeName[20];
-          ::strcpy(modeName,(char*)pgm_read_ptr(&modeArray[mode]));
-
-         String result = "";
-         result += String(progName);
-         result += "-";
-         result += String(modeName);
-         return result;
-      }
-      
-      // Get parameter list based on visualizer name
-      static const VisualizerParamEntry* getVisualizerParams(const String& visualizerName) {
-          const int LOOKUP_SIZE = sizeof(VISUALIZER_PARAM_LOOKUP) / sizeof(VisualizerParamEntry);
-          
-          for (int i = 0; i < LOOKUP_SIZE; i++) {
-              char entryName[32];
-              ::strcpy(entryName, (char*)pgm_read_ptr(&VISUALIZER_PARAM_LOOKUP[i].visualizerName));
-              
-              if (visualizerName.equals(entryName)) {
-                  return &VISUALIZER_PARAM_LOOKUP[i];
-              }
-          }
-          return nullptr;
-      }
-  };  // class VisualizerManager
-
-
-  // AUDIO SETTINGS ==================================================
-
-   const char* const AUDIO_PARAMS[] PROGMEM = {
-      "maxBins", "audioFloor", "audioGain",
-      "avLevelerTarget", "autoFloorAlpha", "autoFloorMin", "autoFloorMax",
-      "noiseGateOpen", "noiseGateClose",
-      "threshold", "minBeatInterval",
-      "rampAttack", "rampDecay", "peakBase", "expDecayFactor"
-    };
-
-   const uint8_t AUDIO_PARAM_COUNT = 15;
+const uint8_t AUDIO_PARAM_COUNT = 15;
 
    
 // Parameter control *************************************************************************************
@@ -224,7 +224,6 @@ bool cFlipX = false;
 float cRadialStep = 0.18f;
 float cBlendFactor = 0.45f;
 
-
 ArduinoJson::JsonDocument sendDoc;
 ArduinoJson::JsonDocument receivedJSON;
 
@@ -253,13 +252,6 @@ BLEDescriptor pStringDescriptor(BLEUUID((uint16_t)0x2902));
 
 //*******************************************************************************
 // CONTROL FUNCTIONS ************************************************************
-
-/*void startingPalette() {
-   gCurrentPaletteNumber = random(0,gGradientPaletteCount-1);
-   fl::CRGBPalette16 gCurrentPalette( gGradientPalettes[gCurrentPaletteNumber] );
-   gTargetPaletteNumber = addmod8( gCurrentPaletteNumber, 1, gGradientPaletteCount);
-   gTargetPalette = gGradientPalettes[ gCurrentPaletteNumber ];
-}*/
 
 // UI update functions ***********************************************
 
@@ -400,6 +392,7 @@ void applyCurrentParameters(const ArduinoJson::JsonObjectConst& params) {
     #undef X
 }
 
+/*
 // Preset file persistence functions with JSON structure
 bool savePreset(int presetNumber) {
     String filename = "/preset_";
@@ -462,44 +455,41 @@ bool loadPreset(int presetNumber) {
     Serial.print("Preset loaded: ");
     Serial.println(filename);
     return true;
-}
+}*/
 
 //***********************************************************************
 
 //void sendDeviceState() {
-void sendVisualizerState() { 
+
+void sendEmitterState() { 
    if (debug) {
-      Serial.println("Sending visualizer state...");
+      Serial.println("Sending emitter state...");
    }
    
    ArduinoJson::JsonDocument stateDoc;
-   stateDoc["program"] = PROGRAM;
-   stateDoc["mode"] = MODE;
-   
-   String currentVisualizer = VisualizerManager::getVisualizerName(PROGRAM, MODE); 
+   stateDoc["emitter"] = EMITTER;
    
    // Get parameter list for current visualizer
-   const VisualizerParamEntry* visualizerParams = VisualizerManager::getVisualizerParams(currentVisualizer);
+   const EmitterParamEntry* emitterParams = getEmitterParams(EMITTER);
 
    ArduinoJson::JsonObject params = stateDoc["parameters"].to<ArduinoJson::JsonObject>();
 
    if (debug) {
-       String currentVisualizer = VisualizerManager::getVisualizerName(PROGRAM, MODE);
-       Serial.print("Current visualizer: ");
-       Serial.println(currentVisualizer);
+       Serial.print("Current emitter: ");
+       Serial.println(EMITTER);
        Serial.print("Found params: ");
-       Serial.println(visualizerParams != nullptr ? "YES" : "NO");
-       if (visualizerParams != nullptr) {
+       Serial.println(emitterParams != nullptr ? "YES" : "NO");
+       if (emitterParams != nullptr) {
            Serial.print("Param count: ");
-           Serial.println(visualizerParams->count);
+           Serial.println(emitterParams->count);
        }
    }
    
-   if (visualizerParams != nullptr) {
-       // Loop through parameters for current visualizer
-       for (uint8_t i = 0; i < visualizerParams->count; i++) {
+   if (emitterParams != nullptr) {
+       // Loop through parameters for current emitter
+       for (uint8_t i = 0; i < emitterParams->count; i++) {
            char paramName[32];
-           ::strcpy(paramName, (char*)pgm_read_ptr(&visualizerParams->params[i]));
+           ::strcpy(paramName, (char*)pgm_read_ptr(&emitterParams->params[i]));
            
            if (debug) {
                Serial.print("Processing parameter: ");
@@ -509,9 +499,9 @@ void sendVisualizerState() {
    }
 
    // Add parameter values to JSON based on visualizer params
-   for (uint8_t i = 0; i < visualizerParams->count; i++) {
+   for (uint8_t i = 0; i < emitterParams->count; i++) {
        char paramName[32];
-       ::strcpy(paramName, (char*)pgm_read_ptr(&visualizerParams->params[i]));
+       ::strcpy(paramName, (char*)pgm_read_ptr(&emitterParams->params[i]));
        
        bool paramFound = false;
        // Use X-macro to match parameter names and add values
@@ -539,10 +529,9 @@ void sendVisualizerState() {
    // Send as a single JSON doc with nested val object (avoids double-encoding
    // that would exceed BLE MTU when string-escaping the inner JSON).
    ArduinoJson::JsonDocument envelope;
-   envelope["id"] = "visualizerState";
+   envelope["id"] = "emitterState";
    ArduinoJson::JsonObject val = envelope["val"].to<ArduinoJson::JsonObject>();
-   val["program"] = PROGRAM;
-   val["mode"] = MODE;
+   val["emitter"] = EMITTER;
    ArduinoJson::JsonObject valParams = val["parameters"].to<ArduinoJson::JsonObject>();
    for (auto kv : params) {
        valParams[kv.key()] = kv.value();
@@ -552,7 +541,7 @@ void sendVisualizerState() {
    serializeJson(envelope, json);
 
    if (debug) {
-       Serial.print("visualizerState payload size: ");
+       Serial.print("emitterState payload size: ");
        Serial.println(json.length());
    }
 
@@ -560,6 +549,143 @@ void sendVisualizerState() {
    pStringCharacteristic->notify();
 }
 
+  // -----------------------------------
+
+void sendFlowState() { 
+   if (debug) {
+      Serial.println("Sending flow state...");
+   }
+   
+   ArduinoJson::JsonDocument stateDoc;
+   stateDoc["flow"] = FLOW;
+   
+   // Get parameter list for current flow
+   const FlowParamEntry* flowParams = getFlowParams(FLOW);
+
+   ArduinoJson::JsonObject params = stateDoc["parameters"].to<ArduinoJson::JsonObject>();
+
+   if (debug) {
+       Serial.print("Current emitter: ");
+       Serial.println(FLOW);
+       Serial.print("Found params: ");
+       Serial.println(flowParams != nullptr ? "YES" : "NO");
+       if (flowParams != nullptr) {
+           Serial.print("Param count: ");
+           Serial.println(flowParams->count);
+       }
+   }
+   
+   if (flowParams != nullptr) {
+       // Loop through parameters for current flow
+       for (uint8_t i = 0; i < flowParams->count; i++) {
+           char paramName[32];
+           ::strcpy(paramName, (char*)pgm_read_ptr(&flowParams->params[i]));
+           
+           if (debug) {
+               Serial.print("Processing parameter: ");
+               Serial.println(paramName);
+           }
+       }
+   }
+
+   // Add parameter values to JSON based on visualizer params
+   for (uint8_t i = 0; i < flowParams->count; i++) {
+       char paramName[32];
+       ::strcpy(paramName, (char*)pgm_read_ptr(&flowParams->params[i]));
+       
+       bool paramFound = false;
+       // Use X-macro to match parameter names and add values
+       // Handle case-insensitive comparison for parameter names
+       #define X(type, parameter, def) \
+           if (strcasecmp(paramName, #parameter) == 0) { \
+               params[paramName] = c##parameter; \
+               if (debug) { \
+                   Serial.print("Added parameter "); \
+                   Serial.print(paramName); \
+                   Serial.print(": "); \
+                   Serial.println(c##parameter); \
+               } \
+               paramFound = true; \
+           }
+       PARAMETER_TABLE
+       #undef X
+       
+       if (!paramFound) {
+           Serial.print("Warning: Parameter not found in X-macro table: ");
+           Serial.println(paramName);
+       }
+   }
+   
+   // Send as a single JSON doc with nested val object (avoids double-encoding
+   // that would exceed BLE MTU when string-escaping the inner JSON).
+   ArduinoJson::JsonDocument envelope;
+   envelope["id"] = "flowState";
+   ArduinoJson::JsonObject val = envelope["val"].to<ArduinoJson::JsonObject>();
+   val["flow"] = FLOW;
+   ArduinoJson::JsonObject valParams = val["parameters"].to<ArduinoJson::JsonObject>();
+   for (auto kv : params) {
+       valParams[kv.key()] = kv.value();
+   }
+
+   String json;
+   serializeJson(envelope, json);
+
+   if (debug) {
+       Serial.print("flowState payload size: ");
+       Serial.println(json.length());
+   }
+
+   pStringCharacteristic->setValue(json);
+   pStringCharacteristic->notify();
+}
+
+
+void sendGlobalState() {
+   if (debug) { Serial.println("Sending global state..."); }
+
+   ArduinoJson::JsonDocument stateDoc;
+   ArduinoJson::JsonObject params = stateDoc["parameters"].to<ArduinoJson::JsonObject>();
+
+   for (uint8_t i = 0; i < GLOBAL_PARAM_COUNT; i++) {
+       char paramName[32];
+       ::strcpy(paramName, (char*)pgm_read_ptr(&GLOBAL_PARAMS[i]));
+
+       bool paramFound = false;
+       #define X(type, parameter, def) \
+           if (strcasecmp(paramName, #parameter) == 0) { \
+               params[paramName] = c##parameter; \
+               paramFound = true; \
+           }
+       PARAMETER_TABLE
+       #undef X
+
+       if (!paramFound) {
+           Serial.print("Warning: Global param not found: ");
+           Serial.println(paramName);
+       }
+   }
+
+   ArduinoJson::JsonDocument envelope;
+   envelope["id"] = "globalState";
+   ArduinoJson::JsonObject val = envelope["val"].to<ArduinoJson::JsonObject>();
+   ArduinoJson::JsonObject valParams = val["parameters"].to<ArduinoJson::JsonObject>();
+   for (auto kv : params) {
+       valParams[kv.key()] = kv.value();
+   }
+
+   String json;
+   serializeJson(envelope, json);
+
+   if (debug) {
+       Serial.print("globalState payload size: ");
+       Serial.println(json.length());
+   }
+
+   pStringCharacteristic->setValue(json);
+   pStringCharacteristic->notify();
+}
+
+  // -----------------------------------
 
 void sendAudioState() {
    if (debug) { Serial.println("Sending audio state..."); }
@@ -620,43 +746,38 @@ void processButton(uint8_t receivedValue) {
 
    sendReceiptButton(receivedValue);
       
-   if (receivedValue < 20) { // Program selection
-      PROGRAM = receivedValue;
-      MODE = 0;
+   if (receivedValue < 20) { // Emitter selection
+      EMITTER = receivedValue;
       displayOn = true;
    }
    
-   if (receivedValue >= 20 && receivedValue < 40) { // Mode selection
-      MODE = receivedValue - 20;
-      //cFxIndex = MODE;
+   if (receivedValue >= 20 && receivedValue < 40) { // Flow selection
+      FLOW = receivedValue - 20;
       displayOn = true;
    }
 
-   if (debug) {
-      Serial.print("Current visualizer: ");
-      Serial.println(VisualizerManager::getVisualizerName(PROGRAM, MODE));
-   }
-
-   if (receivedValue == 92) { sendVisualizerState(); }
+   if (receivedValue == 91) { sendGlobalState(); }
+   if (receivedValue == 92) { sendEmitterState(); }
    if (receivedValue == 93) { sendAudioState(); }
    if (receivedValue == 94) { sendBusState(); }
    //if (receivedValue == 95) { resetAll(); }
+   if (receivedValue == 96) { sendFlowState(); }
    
    if (receivedValue == 98) { displayOn = true; }
    if (receivedValue == 99) { displayOn = false; }
 
-   if (receivedValue >= 101 && receivedValue <= 120) { 
+   /*if (receivedValue >= 101 && receivedValue <= 120) { 
       uint8_t savedPreset = receivedValue - 100;  
-      savePreset(savedPreset); 
-   }
+      //savePreset(savedPreset); 
+   }*/
 
-   if (receivedValue >= 121 && receivedValue <= 140) {
+   /*if (receivedValue >= 121 && receivedValue <= 140) {
        uint8_t presetToLoad = receivedValue - 120;
        if (loadPreset(presetToLoad)) {
            Serial.print("Loaded preset: ");
            Serial.println(presetToLoad);
        }
-   }
+   }*/
 
    //fxWave2d, animartrix
    //if (receivedValue == 160) { fancyTrigger = true; }
@@ -844,6 +965,8 @@ void processString(String receivedID, String receivedValue ) {
 
 //*******************************************************************************
 // BLE SETUP FUNCTION ***********************************************************
+
+uint8_t dummy = 1;
 
 void bleSetup() {
 

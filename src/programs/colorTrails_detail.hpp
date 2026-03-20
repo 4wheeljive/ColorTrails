@@ -41,7 +41,7 @@ namespace colorTrails {
             float a  = base + i * (2.0f * CT_PI / 3.0f);
             float cx = ocx + fl::cosf(a) * orad;
             float cy = ocy + fl::sinf(a) * orad;
-            CRGB c = rainbow(t, orbitalDots.colorSpeed, i / 3.0f);
+            CRGB c = rainbow(t, vizConfig.colorShift, i / 3.0f);
             drawDot(cx, cy, orbitalDots.dotDiam, c.r, c.g, c.b);
         }
     }
@@ -96,7 +96,7 @@ namespace colorTrails {
             float cx = (WIDTH  - 1) * 0.5f * (1.0f + sx);
             float cy = (HEIGHT - 1) * 0.5f * (1.0f + sy);
 
-            CRGB c = rainbow(t, swarmingDots.colorSpeed, d / 3.0f);
+            CRGB c = rainbow(t, vizConfig.colorShift, d / 3.0f);
             drawDot(cx, cy, swarmingDots.dotDiam, c.r, c.g, c.b);
         }
     }
@@ -112,9 +112,9 @@ namespace colorTrails {
         float lx2 = c + (amp + 2.0f) * fl::sinf(t * s * 1.89f + 2.20f);
         float ly2 = c + (amp + 1.0f) * fl::sinf(t * s * 1.37f + 0.70f);
 
-        drawAASubpixelLine(lx1, ly1, lx2, ly2, t, lissajous.colorShift);
-        CRGB ca = rainbow(t, lissajous.colorShift, 0.0f);
-        CRGB cb = rainbow(t, lissajous.colorShift, 1.0f);
+        drawAASubpixelLine(lx1, ly1, lx2, ly2, t, vizConfig.colorShift);
+        CRGB ca = rainbow(t, vizConfig.colorShift, 0.0f);
+        CRGB cb = rainbow(t, vizConfig.colorShift, 1.0f);
         drawAAEndpointDisc(lx1, ly1, ca.r, ca.g, ca.b, 0.85f);
         drawAAEndpointDisc(lx2, ly2, cb.r, cb.g, cb.b, 0.85f);
     }
@@ -125,25 +125,25 @@ namespace colorTrails {
         int idx = 0;
         // Top edge: left to right
         for (int x = 0; x < WIDTH; x++) {
-            CRGB c = rainbow(t, borderRect.colorShift, (float)idx / total);
+            CRGB c = rainbow(t, vizConfig.colorShift, (float)idx / total);
             gR[0][x] = c.r; gG[0][x] = c.g; gB[0][x] = c.b;
             idx++;
         }
         // Right edge: top+1 to bottom
         for (int y = 1; y < HEIGHT; y++) {
-            CRGB c = rainbow(t, borderRect.colorShift, (float)idx / total);
+            CRGB c = rainbow(t, vizConfig.colorShift, (float)idx / total);
             gR[y][WIDTH-1] = c.r; gG[y][WIDTH-1] = c.g; gB[y][WIDTH-1] = c.b;
             idx++;
         }
         // Bottom edge: right-1 to left
         for (int x = WIDTH - 2; x >= 0; x--) {
-            CRGB c = rainbow(t, borderRect.colorShift, (float)idx / total);
+            CRGB c = rainbow(t, vizConfig.colorShift, (float)idx / total);
             gR[HEIGHT-1][x] = c.r; gG[HEIGHT-1][x] = c.g; gB[HEIGHT-1][x] = c.b;
             idx++;
         }
         // Left edge: bottom-1 to top+1
         for (int y = HEIGHT - 2; y > 0; y--) {
-            CRGB c = rainbow(t, borderRect.colorShift, (float)idx / total);
+            CRGB c = rainbow(t, vizConfig.colorShift, (float)idx / total);
             gR[y][0] = c.r; gG[y][0] = c.g; gB[y][0] = c.b;
             idx++;
         }
@@ -189,6 +189,7 @@ namespace colorTrails {
         t0 = fl::millis();
         lastFrameMs = t0;   
         lastEmitter = 255;
+        lastFlow = 255;
 
         noiseX.init(42);
         noiseY.init(1337);
@@ -208,7 +209,7 @@ namespace colorTrails {
 
     // Push flow field struct defaults into cVars (called on flow field change)
     static void pushFlowDefaultsToCVars() {
-        if (vizConfig.flowField == FLOW_NOISE) {
+        if (vizConfig.flow == FLOW_NOISE) {
             noiseFlow = NoiseFlowParams{};
             cXSpeed = noiseFlow.xSpeed;
             cYSpeed = noiseFlow.ySpeed;
@@ -222,7 +223,7 @@ namespace colorTrails {
             cVariationIntensity = ampMod.intensity;
             cVariationSpeed = ampMod.speed;
             cModulateAmp = ampMod.active ? 1 : 0;
-        } else if (vizConfig.flowField == FLOW_FROMCENTER) {
+        } else if (vizConfig.flow == FLOW_FROMCENTER) {
             fromCenter = FromCenterParams{};
             cRadialStep = fromCenter.radialStep;
             cBlendFactor = fromCenter.blendFactor;
@@ -253,11 +254,11 @@ namespace colorTrails {
     static void pushDefaultsToCVars() {
         // Universal
         cFadeRate = vizConfig.fadeRate;
+        cColorShift = vizConfig.colorShift;
         cFlipY = vizConfig.flipY;
         cFlipX = vizConfig.flipX;
         // Emitter: orbitalDots
         cOrbitSpeed = orbitalDots.orbitSpeed;
-        cColorSpeed = orbitalDots.colorSpeed;
         cDotDiam = orbitalDots.dotDiam;
         cOrbitDiam = orbitalDots.orbitDiam;
         // Emitter: swarmingDots
@@ -265,27 +266,23 @@ namespace colorTrails {
         cSwarmSpread = swarmingDots.swarmSpread;
         // Emitter: lissajous / borderRect
         cLineSpeed = lissajous.lineSpeed;
-        cColorShift = lissajous.colorShift;
         cLineAmp = lissajous.lineAmp;
     }
 
     // Read cVars into component structs (called every frame)
     static void syncFromCVars() {
         vizConfig.fadeRate = cFadeRate;
+        vizConfig.colorShift = cColorShift;
         vizConfig.flipY = cFlipY;
         vizConfig.flipX = cFlipX;
         orbitalDots.orbitSpeed = cOrbitSpeed;
-        orbitalDots.colorSpeed = cColorSpeed;
         orbitalDots.dotDiam  = cDotDiam;
         orbitalDots.orbitDiam = cOrbitDiam;
         swarmingDots.swarmSpeed = cSwarmSpeed;
         swarmingDots.swarmSpread = cSwarmSpread;
-        swarmingDots.colorSpeed = cColorSpeed;
         swarmingDots.dotDiam = cDotDiam;
         lissajous.lineSpeed = cLineSpeed;
-        lissajous.colorShift = cColorShift;
         lissajous.lineAmp = cLineAmp;
-        borderRect.colorShift = cColorShift;
         // Flow field + modulator
         syncFlowFromCVars();
     }
@@ -296,33 +293,33 @@ namespace colorTrails {
         lastFrameMs = now;
         float t = (now - t0) * 0.001f;
 
-        // Map AuroraPortal MODE to emitter selection
-        if (MODE < EMITTER_COUNT && MODE != lastEmitter) {
-            vizConfig.emitter = (EmitterType)MODE;
-            lastEmitter = MODE;
+        // Update emitter if changed
+        if (EMITTER < EMITTER_COUNT && EMITTER != lastEmitter) {
+            vizConfig.emitter = (Emitter)EMITTER;
+            lastEmitter = EMITTER;
             pushDefaultsToCVars();
-            sendVisualizerState();
+            sendEmitterState();
         }
 
-        // Detect flow field changes
-        uint8_t currentFlowField = (uint8_t)vizConfig.flowField;
-        if (currentFlowField < FLOW_DISPATCH_COUNT && currentFlowField != lastFlowField) {
-            lastFlowField = currentFlowField;
+        // Update flow field if changed
+        if (FLOW < FLOW_COUNT && FLOW != lastFlow) {
+            vizConfig.flow = (Flow)FLOW;
+            lastFlow = FLOW;
             pushFlowDefaultsToCVars();
-            sendVisualizerState();
+            //sendFlowState();
         }
 
         // Sync UI-controlled values into component structs
         syncFromCVars();
 
         // 1. Flow field: prepare (build profiles, apply modulators, apply flips)
-        FLOW_PREPARE[vizConfig.flowField](t);
+        FLOW_PREPARE[vizConfig.flow](t);
 
         // 2. Emitter: inject color onto grid
         EMITTER_RUN[vizConfig.emitter](t);
 
         // 3. Flow field: advect + fade
-        FLOW_ADVECT[vizConfig.flowField](dt);
+        FLOW_ADVECT[vizConfig.flow](dt);
 
         // 4. Copy float grid to LED array
         for (uint8_t y = 0; y < HEIGHT; y++) {
