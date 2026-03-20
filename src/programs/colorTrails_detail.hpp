@@ -209,24 +209,40 @@ namespace colorTrails {
 
     // Push flow field struct defaults into cVars (called on flow field change)
     static void pushFlowDefaultsToCVars() {
-        if (vizConfig.flow == FLOW_NOISE) {
-            noiseFlow = NoiseFlowParams{};
-            cXSpeed = noiseFlow.xSpeed;
-            cYSpeed = noiseFlow.ySpeed;
-            cXAmp = noiseFlow.xAmp;
-            cYAmp = noiseFlow.yAmp;
-            cXFreq = noiseFlow.xFreq;
-            cYFreq = noiseFlow.yFreq;
-            cXShift = noiseFlow.xShift;
-            cYShift = noiseFlow.yShift;
-            ampMod = AmpModParams{};
-            cVariationIntensity = ampMod.intensity;
-            cVariationSpeed = ampMod.speed;
-            cModulateAmp = ampMod.active ? 1 : 0;
-        } else if (vizConfig.flow == FLOW_FROMCENTER) {
-            fromCenter = FromCenterParams{};
-            cRadialStep = fromCenter.radialStep;
-            cBlendFactor = fromCenter.blendFactor;
+        switch (vizConfig.flow) {
+            case FLOW_NOISE: {
+                noiseFlow = NoiseFlowParams{};
+                cXSpeed = noiseFlow.xSpeed;
+                cYSpeed = noiseFlow.ySpeed;
+                cXAmp = noiseFlow.xAmp;
+                cYAmp = noiseFlow.yAmp;
+                cXFreq = noiseFlow.xFreq;
+                cYFreq = noiseFlow.yFreq;
+                cXShift = noiseFlow.xShift;
+                cYShift = noiseFlow.yShift;
+                ampMod = AmpModParams{};
+                cVariationIntensity = ampMod.intensity;
+                cVariationSpeed = ampMod.speed;
+                cModulateAmp = ampMod.active ? 1 : 0;
+                break;
+            }
+            case FLOW_FROMCENTER: {
+                fromCenter = FromCenterParams{};
+                cRadialStep = fromCenter.radialStep;
+                cBlendFactor = fromCenter.blendFactor;
+                break;
+            }
+            case FLOW_DIRECTIONAL: {
+                directional = DirectionalParams{};
+                cWindStep = directional.windStep;
+                cBlendFactor = directional.blendFactor;
+                cRotateSpeed = directional.rotateSpeed;
+                cWaveAmp = directional.waveAmp;
+                cWaveFreq = directional.waveFreq;
+                cWaveSpeed = directional.waveSpeed;
+                break;
+            }
+            default: break;
         }
     }
 
@@ -248,6 +264,13 @@ namespace colorTrails {
         // From-center flow
         fromCenter.radialStep = cRadialStep;
         fromCenter.blendFactor = cBlendFactor;
+        // Directional flow
+        directional.windStep = cWindStep;
+        directional.blendFactor = cBlendFactor;
+        directional.rotateSpeed = cRotateSpeed;
+        directional.waveAmp = cWaveAmp;
+        directional.waveFreq = cWaveFreq;
+        directional.waveSpeed = cWaveSpeed;
     }
 
     // Push emitter + universal defaults into cVars (called on emitter/mode change)

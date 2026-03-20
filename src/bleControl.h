@@ -107,7 +107,9 @@ const char* const NOISE_PARAMS[] PROGMEM = {
 const char* const FROM_CENTER_PARAMS[] PROGMEM = {
    "radialStep", "blendFactor"
 };
-const char* const DIRECTIONAL_PARAMS[] PROGMEM = {};
+const char* const DIRECTIONAL_PARAMS[] PROGMEM = {
+   "windStep", "blendFactor", "rotateSpeed", "waveAmp", "waveFreq", "waveSpeed"
+};
 
 // Struct to hold flow field name and parameter array reference
 struct FlowParamEntry {
@@ -119,7 +121,7 @@ struct FlowParamEntry {
 const FlowParamEntry FLOW_PARAM_LOOKUP[] PROGMEM = {
    {"noise", NOISE_PARAMS, 5},
    {"fromcenter", FROM_CENTER_PARAMS, 2},
-   {"directional", DIRECTIONAL_PARAMS, 0} 
+   {"directional", DIRECTIONAL_PARAMS, 6}
 };
 
 static const FlowParamEntry* getFlowParams(uint8_t flowIdx) {
@@ -218,6 +220,11 @@ bool cFlipY = false;
 bool cFlipX = false;
 float cRadialStep = 0.18f;
 float cBlendFactor = 0.45f;
+float cWindStep = 0.95f;
+float cRotateSpeed = 0.25f;
+float cWaveAmp = 0.0f;
+float cWaveFreq = 0.20f;
+float cWaveSpeed = 1.20f;
 
 ArduinoJson::JsonDocument sendDoc;
 ArduinoJson::JsonDocument receivedJSON;
@@ -364,7 +371,12 @@ void sendReceiptString(String receivedID, String receivedValue) {
    X(float, VariationSpeed, 1.0f) \
    X(uint8_t, ModulateAmp, 1) \
    X(float, RadialStep, 0.18f) \
-   X(float, BlendFactor, 0.45f)
+   X(float, BlendFactor, 0.45f) \
+   X(float, WindStep, 0.95f) \
+   X(float, RotateSpeed, 0.25f) \
+   X(float, WaveAmp, 0.0f) \
+   X(float, WaveFreq, 0.20f) \
+   X(float, WaveSpeed, 1.20f)
 
 
 // Auto-generated helper functions using X-macros
