@@ -119,7 +119,7 @@ struct FlowParamEntry {
 };
 
 const FlowParamEntry FLOW_PARAM_LOOKUP[] PROGMEM = {
-   {"noise", NOISE_PARAMS, 5},
+   {"noise", NOISE_PARAMS, 8},
    {"fromcenter", FROM_CENTER_PARAMS, 2},
    {"directional", DIRECTIONAL_PARAMS, 6}
 };

@@ -24,8 +24,8 @@ bool audioLatencyDiagnostics = false;
 FrameProfiler profiler;
 #endif*/
 
-//#define BIG_BOARD
-#undef BIG_BOARD
+#define BIG_BOARD
+//#undef BIG_BOARD
 
 #define PIN0 2
 
@@ -73,7 +73,7 @@ bool mappingOverride = false;
 #include "audio/audioInput.h"
 #include "audio/audioProcessing.h"
 #include "bleControl.h"
-#include "programs/colorTrails.hpp"
+#include "colorTrails.hpp"
 
 using namespace fl;
 
