@@ -169,10 +169,10 @@ namespace colorTrails {
         cOrbitSpeed = orbitalDots.orbitSpeed;
         cDotDiam = orbitalDots.dotDiam;
         cOrbitDiam = orbitalDots.orbitDiam;
-        cModOrbitSpeedRate = orbitalDots.modOrbitSpeed.rate;
-        cModOrbitSpeedLevel = orbitalDots.modOrbitSpeed.level;
-        cModOrbitDiamRate = orbitalDots.modOrbitDiam.rate;
-        cModOrbitDiamLevel = orbitalDots.modOrbitDiam.level;
+        cModOrbitSpeedRate = orbitalDots.modOrbitSpeed.modRate;
+        cModOrbitSpeedLevel = orbitalDots.modOrbitSpeed.modLevel;
+        cModOrbitDiamRate = orbitalDots.modOrbitDiam.modRate;
+        cModOrbitDiamLevel = orbitalDots.modOrbitDiam.modLevel;
         // Emitter: swarmingDots
         cSwarmSpeed = swarmingDots.swarmSpeed;
         cSwarmSpread = swarmingDots.swarmSpread;
@@ -192,10 +192,10 @@ namespace colorTrails {
         orbitalDots.orbitSpeed = cOrbitSpeed;
         orbitalDots.dotDiam  = cDotDiam;
         orbitalDots.orbitDiam = cOrbitDiam;
-        orbitalDots.modOrbitSpeed.rate = cModOrbitSpeedRate;
-        orbitalDots.modOrbitSpeed.level = cModOrbitSpeedLevel;
-        orbitalDots.modOrbitDiam.rate = cModOrbitDiamRate;
-        orbitalDots.modOrbitDiam.level = cModOrbitDiamLevel;
+        orbitalDots.modOrbitSpeed.modRate = cModOrbitSpeedRate;
+        orbitalDots.modOrbitSpeed.modLevel = cModOrbitSpeedLevel;
+        orbitalDots.modOrbitDiam.modRate = cModOrbitDiamRate;
+        orbitalDots.modOrbitDiam.modLevel = cModOrbitDiamLevel;
         swarmingDots.numDots = cNumDots;
         swarmingDots.swarmSpeed = cSwarmSpeed;
         swarmingDots.swarmSpread = cSwarmSpread;

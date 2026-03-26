@@ -21,10 +21,12 @@ namespace colorTrails {
 
     struct modulators {
         float linear[num_timers];               // returns 0 to FLT_MAX
-        float radial[num_timers];               // returns 0 to 2*PI
+        float radial_sine[num_timers];          // returns 0 to 2*PI
+        float radial_sine_norm[num_timers];     // returns 0 to 1
         float directional_sine[num_timers];     // returns -1 to 1
         float directional_noise[num_timers];    // returns -1 to 1
-        float radial_noise[num_timers];          // returns 0 to 2*PI
+        float radial_noise[num_timers];         // returns 0 to 2*PI
+        float radial_noise_norm[num_timers];    // returns 0 to 1
     };
 
     timers timings;     // timer inputs; all time/speed settings in one place
@@ -42,12 +44,14 @@ namespace colorTrails {
                     (runtime + timings.offset[i]) * timings.ratio[i];
 
                 // angle mod, continous rotation, returns 0 to 2 * PI
-                move.radial[i] =
-                    fl::fmodf(move.linear[i], 2 * PI);
+                move.radial_sine[i] =
+                    fl::fmodf(move.linear[i], CT_2PI);
+
+                move.radial_sine_norm[i] = fl::map_range_clamped<float, float>(move.radial_sine[i], 0.f, CT_2PI, 0.0f, 1.0f);
 
                 // directional offsets or factors, returns -1 to 1
                 move.directional_sine[i] =
-                    fl::sinf(move.radial[i]);
+                    fl::sinf(move.radial_sine[i]);
 
                 // noise-based directional, offsets or factors, returns -1 to 1
                 move.directional_noise[i] =
@@ -55,7 +59,9 @@ namespace colorTrails {
 
                 // noise based angle offset, returns 0 to 2 * PI
                 move.radial_noise[i] =
-                    PI * (1.f + move.directional_noise[i]); // noiseX.noise(move.linear[i])
+                    CT_PI * (1.f + move.directional_noise[i]); // noiseX.noise(move.linear[i])
+                
+                move.radial_noise_norm[i] = fl::map_range_clamped<float, float>(move.radial_noise[i], 0.f, CT_2PI, 0.0f, 1.0f);
 
             }
         }
@@ -66,26 +72,16 @@ namespace colorTrails {
 
     class Modulators {
     public:
-        // Apply modulation to a base value using the selected waveform and operation
-        static float apply(float base, const ModConfig& m) {
-            if (m.type == MOD_NONE || m.level == 0.0f) return base;
-            float wave = getModValue(m);
-            switch (m.op) {
-                case OP_SCALE: return base * (1.0f + m.level * wave);
-                case OP_ADD:   return base + m.level * wave;
-                default:       return base;
-            }
-        }
-
-    private:
-        // Read the raw modulator output for this config's type + timer (native range)
+        // Read the raw modulator output for this config's modType + modTimer (native range)
         static float getModValue(const ModConfig& m) {
-            switch (m.type) {
-                case MOD_LINEAR:            return move.linear[m.timer];
-                case MOD_RADIAL:            return move.radial[m.timer];
-                case MOD_DIRECTIONAL_SINE:  return move.directional_sine[m.timer];
-                case MOD_DIRECTIONAL_NOISE: return move.directional_noise[m.timer];
-                case MOD_RADIAL_NOISE:      return move.radial_noise[m.timer];
+            switch (m.modType) {
+                case MOD_LINEAR:            return move.linear[m.modTimer];
+                case MOD_RADIAL_SINE:       return move.radial_sine[m.modTimer];
+                case MOD_RADIAL_SINE_NORM:  return move.radial_sine_norm[m.modTimer];
+                case MOD_DIRECTIONAL_SINE:  return move.directional_sine[m.modTimer];
+                case MOD_DIRECTIONAL_NOISE: return move.directional_noise[m.modTimer];
+                case MOD_RADIAL_NOISE:      return move.radial_noise[m.modTimer];
+                case MOD_RADIAL_NOISE_NORM: return move.radial_noise_norm[m.modTimer];
                 default:                    return 0.0f;
             }
         }

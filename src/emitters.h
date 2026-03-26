@@ -16,31 +16,31 @@ namespace colorTrails {
     OrbitalDotsParams orbitalDots = {
         .numDots    = 3,
         .orbitSpeed = 3.0f,
-        .modOrbitSpeed = {MOD_DIRECTIONAL_NOISE, OP_SCALE, 2, 0.0f, 0.3f},
-        //                type                   op      timer rate  level
+        .modOrbitSpeed = {MOD_DIRECTIONAL_NOISE, 0, 0.0f, 0.3f},
+        //                modType             modTimer modRate modLevel
         .dotDiam    = 1.5f,
-        .orbitDiam  = 10.f,
-        .modOrbitDiam = {MOD_RADIAL_NOISE, OP_SCALE, 0, 0.0f, 0.5f},
-        //               type              op      timer rate  level
+        .orbitDiam  = MIN_DIMENSION * 0.6f,
+        .modOrbitDiam = {MOD_RADIAL_NOISE_NORM, 1, 0.0f, 0.5f},
+        //               modType              modTimer modRate modLevel
     };
 
     static void emitOrbitalDots(float t) {
 
         // Base ratios — developer's artistic starting point
-        // rate (UI-tunable) adjusts these up/down
-        timings.ratio[0] = 0.0005f  + orbitalDots.modOrbitDiam.rate;    // timer 0: orbit diameter breathing
-        timings.ratio[2] = 0.00005f + orbitalDots.modOrbitSpeed.rate;   // timer 2: orbit speed variation
+        // modRate (UI-tunable) adjusts these up/down
+        timings.ratio[0] = 0.00005f + orbitalDots.modOrbitSpeed.modRate;   // timer 0: orbit speed variation
+        timings.ratio[1] = 0.0005f  + orbitalDots.modOrbitDiam.modRate;    // timer 1: orbit diameter breathing
 
         calculate_modulators(timings);
 
         // Get effective values (base modified by modulator output)
-        float effOrbitSpeed = Modulators::apply(orbitalDots.orbitSpeed, orbitalDots.modOrbitSpeed);
-        float effOrbitDiam  = Modulators::apply(orbitalDots.orbitDiam,  orbitalDots.modOrbitDiam);
+        float effOrbitSpeed = orbitalDots.orbitSpeed * (1.f + orbitalDots.modOrbitSpeed.modLevel * Modulators::getModValue(orbitalDots.modOrbitSpeed));
+        float effOrbitDiam  = orbitalDots.orbitDiam * (1.f + orbitalDots.modOrbitDiam.modLevel * Modulators::getModValue(orbitalDots.modOrbitDiam));
 
         float fNumDots = static_cast<float>(orbitalDots.numDots);
         float ocx  = WIDTH  * 0.5f - 0.5f;
         float ocy  = HEIGHT * 0.5f - 0.5f;
-        float orad = effOrbitDiam * 0.8f;
+        float orad = effOrbitDiam;
         float base = t * effOrbitSpeed;
         for (int i = 0; i < orbitalDots.numDots; i++) {
             float a  = base + i * (2.0f * CT_PI / fNumDots);
@@ -67,6 +67,7 @@ namespace colorTrails {
     // swarmSpread controls grouping (0 = clustered, 1 = independent, >1 = wide).
     // Max 5 dots (num_timers=10, 2 timers per dot).
     static void emitSwarmingDots(float t) {
+
         uint8_t n = swarmingDots.numDots;
         float fNumDots = static_cast<float>(n);
 

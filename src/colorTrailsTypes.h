@@ -13,6 +13,7 @@
 namespace colorTrails {
 
     constexpr float CT_PI = 3.14159265358979f;
+    constexpr float CT_2PI = 6.28318530717958f;
 
     // ═══════════════════════════════════════════════════════════════════
     //  GRID STATE & TIMING
@@ -373,27 +374,22 @@ namespace colorTrails {
     enum ModType : uint8_t {
         MOD_NONE              = 0,
         MOD_LINEAR            = 1,   // move.linear[timer],            0 to FLT_MAX
-        MOD_RADIAL            = 2,   // move.radial[timer],            0 to 2*PI
-        MOD_DIRECTIONAL_SINE  = 3,   // move.directional_sine[timer],  -1 to 1
-        MOD_DIRECTIONAL_NOISE = 4,   // move.directional_noise[timer], -1 to 1
-        MOD_RADIAL_NOISE      = 5,   // move.radial_noise[timer],      0 to 2*PI
-    };
-
-    // Mathematical operation applied to base value
-    enum ModOp : uint8_t {
-        OP_SCALE = 0,   // base * (1 + level * wave)  — percentage perturbation around base
-        OP_ADD   = 1,   // base + level * wave         — fixed-magnitude offset from base
+        MOD_RADIAL_SINE       = 2,   // move.radial_sine[timer],       0 to 2*PI
+        MOD_RADIAL_SINE_NORM  = 3,   // move.radial_sine_norm[timer],  0 to 1
+        MOD_DIRECTIONAL_SINE  = 4,   // move.directional_sine[timer],  -1 to 1
+        MOD_DIRECTIONAL_NOISE = 5,   // move.directional_noise[timer], -1 to 1
+        MOD_RADIAL_NOISE      = 6,   // move.radial_noise[timer],      0 to 2*PI
+        MOD_RADIAL_NOISE_NORM = 7,   // move.radial_noise_norm[timer], 0 to 1
     };
 
     struct ModConfig {
         // Hardcoded by developer — architectural choices, set on the instance in the emitter file
-        ModType type  = MOD_NONE;   // which move.* output to read
-        ModOp   op    = OP_SCALE;   // how the wave modifies the base value
-        uint8_t timer = 0;          // which timer index to read from (0–9)
+        ModType modType  = MOD_NONE;   // which move.* output to read
+        uint8_t modTimer = 0;          // which timer index to read from (0–9)
 
         // UI-tunable via cVars — struct values are defaults, overwritten by syncFromCVars()
-        float   rate  = 0.0f;       // UI adjustment to timings.ratio[timer] (developer uses in formula)
-        float   level = 0.0f;       // modulation depth (0 = mod off)
+        float   modRate  = 0.0f;       // UI adjustment to timings.ratio[timer] (developer uses in formula)
+        float   modLevel = 0.0f;       // modulation depth (0 = mod off)
     };
 
     // ═══════════════════════════════════════════════════════════════════
@@ -411,24 +407,28 @@ namespace colorTrails {
         float orbitDiam;
         ModConfig modOrbitDiam;
     };
+    
+    struct AudioDotsParams {
+        float dotDiam;
+    };
 
     struct SwarmingDotsParams {
         uint8_t numDots;
         float swarmSpeed;
+        ModConfig modSwarmSpeed;
         float swarmSpread;
+        ModConfig modSwarmSpread;
         float dotDiam;
     };
 
     struct LissajousParams {
         float lineSpeed;
+        ModConfig modLineSpeed;
         float lineAmp;
+        ModConfig modLineAmp;
     };
 
     struct BorderRectParams {
-    };
-
-    struct AudioDotsParams {
-        float dotDiam;
     };
 
 
