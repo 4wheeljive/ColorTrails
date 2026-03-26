@@ -19,29 +19,24 @@ namespace colorTrails {
         .modOrbitSpeed = {MOD_DIRECTIONAL_NOISE, 0, 0.0f, 0.3f},
         //                modType             modTimer modRate modLevel
         .dotDiam    = 1.5f,
-        .orbitDiam  = MIN_DIMENSION * 0.6f,
+        .orbitDiam  = MIN_DIMENSION * 0.3f,
         .modOrbitDiam = {MOD_RADIAL_NOISE_NORM, 1, 0.0f, 0.5f},
         //               modType              modTimer modRate modLevel
     };
 
     static void emitOrbitalDots(float t) {
-
-        // Base ratios — developer's artistic starting point
-        // modRate (UI-tunable) adjusts these up/down
-        timings.ratio[0] = 0.00005f + orbitalDots.modOrbitSpeed.modRate;   // timer 0: orbit speed variation
-        timings.ratio[1] = 0.0005f  + orbitalDots.modOrbitDiam.modRate;    // timer 1: orbit diameter breathing
+        
+        timings.ratio[1] = 0.0005f * orbitalDots.modOrbitDiam.modRate;
+        float modDiam = fl::map_range_clamped<float, float>(noiseX.noise(move.linear[1]), -0.7f, 0.7f, 0.0f, 1.0f);
 
         calculate_modulators(timings);
-
-        // Get effective values (base modified by modulator output)
-        float effOrbitSpeed = orbitalDots.orbitSpeed * (1.f + orbitalDots.modOrbitSpeed.modLevel * Modulators::getModValue(orbitalDots.modOrbitSpeed));
-        float effOrbitDiam  = orbitalDots.orbitDiam * (1.f + orbitalDots.modOrbitDiam.modLevel * Modulators::getModValue(orbitalDots.modOrbitDiam));
 
         float fNumDots = static_cast<float>(orbitalDots.numDots);
         float ocx  = WIDTH  * 0.5f - 0.5f;
         float ocy  = HEIGHT * 0.5f - 0.5f;
-        float orad = effOrbitDiam;
-        float base = t * effOrbitSpeed;
+        //float orad = effOrbitDiam;
+        float orad = orbitalDots.orbitDiam * orbitalDots.modOrbitDiam.modLevel * (1.f + modDiam);  
+        float base = t * orbitalDots.orbitSpeed;
         for (int i = 0; i < orbitalDots.numDots; i++) {
             float a  = base + i * (2.0f * CT_PI / fNumDots);
             float cx = ocx + fl::cosf(a) * orad;

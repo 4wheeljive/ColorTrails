@@ -887,19 +887,23 @@
 
         const PARAMETER_REGISTRY = {
             // GLOBAL
-            persistence: {min: 0.02, max: 30, default: 10, step: 0.01},
+            persistence: {min: 0.02, max: 30, default: .02, step: 0.01},
             colorShift:  {min: 0.01, max: 1, default: 0.10, step: 0.01},
 
             // EMITTERS
             numDots:     {min: 1, max: 5, default: 3, step: 1},
-            orbitSpeed:  {min: -25, max: 25, default: 0.35, step: 0.01},
+            orbitSpeed:  {min: -25, max: 25, default: 0.1, step: 0.01},
             colorSpeed:  {min: -2, max: 2, default: 0.10, step: 0.01},
             dotDiam:     {min: 0.1, max: 5, default: 1.5, step: 0.1},
+           
             orbitDiam:   {min: 1, max: 20, default: 10, step: 0.5},
+           
             modOrbitSpeedRate:  {min: -0.01, max: 0.01, default: 0.00005, step: 0.00001},
             modOrbitSpeedLevel: {min: .01, max: 2, default: 0.3, step: 0.01},
-            modOrbitDiamRate:   {min: -0.01, max: 0.01, default: 0.0005, step: 0.00001},
-            modOrbitDiamLevel:  {min: .01, max: 2, default: 0.5, step: 0.01},
+           
+            modOrbitDiamRate:   {min: 0.01, max: 100.0, default: 0.1, step: 0.001},
+            modOrbitDiamLevel:  {min: .1, max: 2, default: 1.3, step: 0.1},
+           
             swarmSpeed:  {min: -5, max: 5, default: 0.5, step: 0.1},
             swarmSpread: {min: 0, max: 3, default: 1.0, step: 0.1},
             lineSpeed:   {min: 0.01, max: 2, default: 0.35, step: 0.01},
