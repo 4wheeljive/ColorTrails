@@ -16,7 +16,7 @@ CREDITS:
 #define FORMAT_LITTLEFS_IF_FAILED true 
 
 bool debug = false;
-bool audioEnabled = true;
+bool audioEnabled = false;
 bool audioLatencyDiagnostics = false;
 
 /*#include "profiler.h"
@@ -24,8 +24,8 @@ bool audioLatencyDiagnostics = false;
 FrameProfiler profiler;
 #endif*/
 
-#define BIG_BOARD
-//#undef BIG_BOARD
+//#define BIG_BOARD
+#undef BIG_BOARD
 
 #define PIN0 2
 

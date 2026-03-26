@@ -38,9 +38,9 @@ namespace colorTrails {
     const EmitterFn EMITTER_RUN[] = {
         emitOrbitalDots,
         emitSwarmingDots,
+        emitAudioDots,
         emitLissajousLine,
         emitRainbowBorder,
-        emitAudioDots,
     };
 
     const FlowPrepFn FLOW_PREPARE[] = {
@@ -103,10 +103,6 @@ namespace colorTrails {
                 cYFreq = noiseFlow.yFreq;
                 cXShift = noiseFlow.xShift;
                 cYShift = noiseFlow.yShift;
-                //ampMod = AmpModParams{};
-                //cVariationIntensity = ampMod.intensity;
-                //cVariationSpeed = ampMod.speed;
-                //cModulateAmp = ampMod.active ? 1 : 0;
                 break;
             }
             case FLOW_FROMCENTER: {
@@ -140,10 +136,6 @@ namespace colorTrails {
         noiseFlow.yFreq = cYFreq;
         noiseFlow.xShift = cXShift;
         noiseFlow.yShift = cYShift;
-        //ampMod.intensity = cVariationIntensity;
-        //ampMod.speed = cVariationSpeed;
-        //ampMod.active = (cModulateAmp > 0);
-        //vizConfig.useAmpMod = ampMod.active;
         // From-center flow
         fromCenter.radialStep = cRadialStep;
         fromCenter.blendFactor = cBlendFactor;
@@ -161,9 +153,6 @@ namespace colorTrails {
         // Universal
         cPersistence = vizConfig.persistence;
         cColorShift = vizConfig.colorShift;
-        cFlipY = vizConfig.flipY;
-        cFlipX = vizConfig.flipX;
-        cUseRainbow = useRainbow;
         // Emitter: orbitalDots
         cNumDots = orbitalDots.numDots;
         cOrbitSpeed = orbitalDots.orbitSpeed;
@@ -185,9 +174,6 @@ namespace colorTrails {
     static void syncFromCVars() {
         vizConfig.persistence = cPersistence;
         vizConfig.colorShift = cColorShift;
-        vizConfig.flipY = cFlipY;
-        vizConfig.flipX = cFlipX;
-        useRainbow = cUseRainbow;
         orbitalDots.numDots = cNumDots;
         orbitalDots.orbitSpeed = cOrbitSpeed;
         orbitalDots.dotDiam  = cDotDiam;
@@ -234,14 +220,10 @@ namespace colorTrails {
         // 1. Flow field: prepare (build X and Y profiles)
         FLOW_PREPARE[vizConfig.flow](t);
 
-        // 2. Apply axis flips
-        if (vizConfig.flipX) flipAxisX();
-        if (vizConfig.flipY) flipAxisY();
-        
-        // 3. Emitter: inject color onto grid
+        // 2. Emitter: inject color onto grid
         EMITTER_RUN[vizConfig.emitter](t);
 
-        // 4. Flow field: advect + fade
+        // 3. Flow field: advect + fade
         FLOW_ADVECT[vizConfig.flow](dt);
 
         // 4. Copy float grid to LED array

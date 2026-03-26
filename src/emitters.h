@@ -15,27 +15,27 @@ namespace colorTrails {
 
     OrbitalDotsParams orbitalDots = {
         .numDots    = 3,
-        .orbitSpeed = 3.0f,
-        .modOrbitSpeed = {MOD_DIRECTIONAL_NOISE, 0, 0.0f, 0.3f},
-        //                modType             modTimer modRate modLevel
+        .orbitSpeed = 0.15f,
+        .modOrbitSpeed = {0, 0.0f, 0.3f},       // modTimer, modRate, modLevel                 
         .dotDiam    = 1.5f,
-        .orbitDiam  = MIN_DIMENSION * 0.3f,
-        .modOrbitDiam = {MOD_RADIAL_NOISE_NORM, 1, 0.0f, 0.5f},
-        //               modType              modTimer modRate modLevel
+        .orbitDiam  = MIN_DIMENSION * 0.3f, 
+        .modOrbitDiam = {1, 0.0f, 0.5f}         // modTimer, modRate, modLevel
     };
 
     static void emitOrbitalDots(float t) {
         
         timings.ratio[1] = 0.0005f * orbitalDots.modOrbitDiam.modRate;
-        float modDiam = fl::map_range_clamped<float, float>(noiseX.noise(move.linear[1]), -0.7f, 0.7f, 0.0f, 1.0f);
-
+        //float modDiam = fl::map_range_clamped<float, float>(noiseX.noise(move.linear[1]), -0.7f, 0.7f, 0.0f, 1.0f);
+        float modDiam = 0.5f + 0.5f * noiseX.noise(move.linear[1]); 
+  
         calculate_modulators(timings);
 
         float fNumDots = static_cast<float>(orbitalDots.numDots);
         float ocx  = WIDTH  * 0.5f - 0.5f;
         float ocy  = HEIGHT * 0.5f - 0.5f;
-        //float orad = effOrbitDiam;
-        float orad = orbitalDots.orbitDiam * orbitalDots.modOrbitDiam.modLevel * (1.f + modDiam);  
+        float L = orbitalDots.modOrbitDiam.modLevel;
+        float swing = L * 6.0f * (modDiam - 0.5f);
+        float orad = fmaxf(orbitalDots.orbitDiam * (1.0f + swing), orbitalDots.dotDiam);  
         float base = t * orbitalDots.orbitSpeed;
         for (int i = 0; i < orbitalDots.numDots; i++) {
             float a  = base + i * (2.0f * CT_PI / fNumDots);

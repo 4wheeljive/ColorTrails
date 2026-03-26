@@ -37,22 +37,23 @@ extern uint8_t FLOW;
 // GLOBAL PARAMETERS *******************************
 
 const char* const GLOBAL_PARAMS[] PROGMEM = {
-   "persistence", "colorShift", "flipY", "flipX"
+   "persistence", "colorShift"
 };
 
-const uint8_t GLOBAL_PARAM_COUNT = 4;
+const uint8_t GLOBAL_PARAM_COUNT = 2;
 
 // EMITTERS ****************************************
 
 // Emitter names in PROGMEM
 const char orbitaldots_str[] PROGMEM = "orbitaldots";
 const char swarmingdots_str[] PROGMEM = "swarmingdots";
+const char audiodots_str[] PROGMEM = "audiodots";
 const char lissajous_str[] PROGMEM = "lissajous";
 const char borderrect_str[] PROGMEM = "borderrect";
-const char audiodots_str[] PROGMEM = "audiodots";
+
 
 const char* const EMITTERS[] PROGMEM = {
-      orbitaldots_str, swarmingdots_str, lissajous_str, borderrect_str, audiodots_str
+      orbitaldots_str, swarmingdots_str, audiodots_str, lissajous_str, borderrect_str
    };
 
 const uint8_t EMITTER_COUNTS[] = {5};
@@ -65,11 +66,12 @@ const char* const ORBITALDOTS_PARAMS[] PROGMEM = {
 const char* const SWARMINGDOTS_PARAMS[] PROGMEM = {
    "numDots", "dotDiam", "swarmSpeed", "swarmSpread"
 };
+const char* const AUDIODOTS_PARAMS[] PROGMEM = {};
 const char* const LISSAJOUS_PARAMS[] PROGMEM = {
    "lineSpeed", "lineAmp"
 };
 const char* const BORDERRECT_PARAMS[] PROGMEM = {};
-const char* const AUDIODOTS_PARAMS[] PROGMEM = {};
+
 
 // Struct to hold emitter name and parameter array reference
 struct EmitterParamEntry {
@@ -81,9 +83,9 @@ struct EmitterParamEntry {
 const EmitterParamEntry EMITTER_PARAM_LOOKUP[] PROGMEM = {
    {"orbitaldots", ORBITALDOTS_PARAMS, 8},
    {"swarmingdots", SWARMINGDOTS_PARAMS, 4},
+   {"audiodots", AUDIODOTS_PARAMS, 0},
    {"lissajous", LISSAJOUS_PARAMS, 2},
    {"borderrect", BORDERRECT_PARAMS, 0},
-   {"audiodots", AUDIODOTS_PARAMS, 0}
 };
 
 static const EmitterParamEntry* getEmitterParams(uint8_t emitterIdx) {
@@ -132,11 +134,6 @@ static const FlowParamEntry* getFlowParams(uint8_t flowIdx) {
       if (flowIdx >= FLOW_COUNT) return nullptr;
       return &FLOW_PARAM_LOOKUP[flowIdx];
 }
-
-// MODULATOR PARAMS **********************************
-const char* const MODULATOR_PARAMS[] PROGMEM = {
-      "variationIntensity", "variationSpeed", "modulateAmp"
-};   
 
 // AUDIO SETTINGS ==================================================
 
@@ -199,14 +196,15 @@ float cPeakBase = 1.0f;
 float cExpDecayFactor = 0.9f;
 
 //ColorTrails
-float cPersistence = 14.8f;
+float cPersistence = 0.02f;
+bool cUseRainbow = false;
 float cXFreq = 0.33f;
-float cYFreq = 0.33f;
-float cOrbitSpeed = 0.35f;
+float cYFreq = 0.32f;
+float cOrbitSpeed = 0.15f;
 float cModOrbitSpeedRate = 0.00005f;
-float cModOrbitSpeedLevel = 0.3f;
+float cModOrbitSpeedLevel = 1.0f;
 float cModOrbitDiamRate = 0.0005f;
-float cModOrbitDiamLevel = 0.5f;
+float cModOrbitDiamLevel = 1.0f;
 float cXShift = 1.8f;
 float cYShift = 1.8f;
 float cOrbitDiam = 10.0f;
@@ -220,14 +218,8 @@ float cColorShift = 0.10f;
 float cLineAmp = 13.5f;
 float cXAmp = 1.0f;
 float cYAmp = 1.0f;
-float cXSpeed = -1.73f;
-float cYSpeed = -1.72f;
-float cVariationIntensity = 4.0f;
-float cVariationSpeed = 1.0f;
-uint8_t cModulateAmp = 1;
-bool cFlipY = false;
-bool cFlipX = false;
-bool cUseRainbow = false;
+float cXSpeed = -0.25f;
+float cYSpeed = -0.25f;
 float cRadialStep = 0.18f;
 float cBlendFactor = 0.45f;
 float cWindStep = 0.95f;
@@ -360,14 +352,14 @@ void sendReceiptString(String receivedID, String receivedValue) {
    X(float, PeakBase, 1.0f) \
    X(float, ExpDecayFactor, 1.0f) \
    X(float, OrbitSpeed, 0.35f) \
-   X(float, Persistence, 14.8f) \
+   X(float, Persistence, 0.02f) \
    X(float, XShift, 1.8f) \
    X(float, YShift, 1.8f) \
    X(float, OrbitDiam, 10.0f) \
    X(float, ModOrbitSpeedRate, 0.00005f) \
-   X(float, ModOrbitSpeedLevel, 0.3f) \
+   X(float, ModOrbitSpeedLevel, 1.0f) \
    X(float, ModOrbitDiamRate, 0.0005f) \
-   X(float, ModOrbitDiamLevel, 0.5f) \
+   X(float, ModOrbitDiamLevel, 1.0f) \
    X(float, ColorSpeed, 0.10f) \
    X(uint8_t, NumDots, 3) \
    X(float, DotDiam, 1.5f) \
@@ -377,14 +369,11 @@ void sendReceiptString(String receivedID, String receivedValue) {
    X(float, ColorShift, 0.10f) \
    X(float, LineAmp, 13.5f) \
    X(float, XFreq, 0.33f) \
-   X(float, YFreq, 0.33f) \
-   X(float, XSpeed, -1.73f) \
-   X(float, YSpeed, -1.72f) \
+   X(float, YFreq, 0.32f) \
+   X(float, XSpeed, -0.25f) \
+   X(float, YSpeed, -0.25f) \
    X(float, XAmp, 1.0f) \
    X(float, YAmp, 1.0f) \
-   X(float, VariationIntensity, 4.0f) \
-   X(float, VariationSpeed, 1.0f) \
-   X(uint8_t, ModulateAmp, 1) \
    X(float, RadialStep, 0.18f) \
    X(float, BlendFactor, 0.45f) \
    X(float, WindStep, 0.95f) \
@@ -854,8 +843,6 @@ void processCheckbox(String receivedID, bool receivedValue ) {
    
    if (receivedID == "cx11") {mappingOverride = receivedValue;};
 
-   if (receivedID == "cx30") {cFlipY = receivedValue;};
-   if (receivedID == "cx31") {cFlipX = receivedValue;};
    if (receivedID == "cx32") {cUseRainbow = receivedValue;};
 
 }

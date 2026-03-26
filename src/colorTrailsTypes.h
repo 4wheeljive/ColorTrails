@@ -333,22 +333,6 @@ namespace colorTrails {
         }
     }
 
-    void flipAxisX(){   
-        for (int i = 0; i < HEIGHT / 2; i++) {
-            float tmp = yProf[i];
-            yProf[i] = yProf[HEIGHT - 1 - i];
-            yProf[HEIGHT - 1 - i] = tmp;
-        }
-    }
-
-    void flipAxisY() {
-        for (int i = 0; i < WIDTH / 2; i++) {
-            float tmp = xProf[i];
-            xProf[i] = xProf[WIDTH - 1 - i];
-            xProf[WIDTH - 1 - i] = tmp;
-        }
-    }
-
     // ═══════════════════════════════════════════════════════════════════
     //  COMPONENT TYPES & ENUMS
     // ═══════════════════════════════════════════════════════════════════
@@ -370,21 +354,9 @@ namespace colorTrails {
     //  MODULATION TYPES
     // ═══════════════════════════════════════════════════════════════════
 
-    // Waveform source — maps 1:1 to modulators struct fields, native ranges preserved
-    enum ModType : uint8_t {
-        MOD_NONE              = 0,
-        MOD_LINEAR            = 1,   // move.linear[timer],            0 to FLT_MAX
-        MOD_RADIAL_SINE       = 2,   // move.radial_sine[timer],       0 to 2*PI
-        MOD_RADIAL_SINE_NORM  = 3,   // move.radial_sine_norm[timer],  0 to 1
-        MOD_DIRECTIONAL_SINE  = 4,   // move.directional_sine[timer],  -1 to 1
-        MOD_DIRECTIONAL_NOISE = 5,   // move.directional_noise[timer], -1 to 1
-        MOD_RADIAL_NOISE      = 6,   // move.radial_noise[timer],      0 to 2*PI
-        MOD_RADIAL_NOISE_NORM = 7,   // move.radial_noise_norm[timer], 0 to 1
-    };
 
     struct ModConfig {
         // Hardcoded by developer — architectural choices, set on the instance in the emitter file
-        ModType modType  = MOD_NONE;   // which move.* output to read
         uint8_t modTimer = 0;          // which timer index to read from (0–9)
 
         // UI-tunable via cVars — struct values are defaults, overwritten by syncFromCVars()
@@ -438,17 +410,12 @@ namespace colorTrails {
 
     struct CtVizConfig {
         // Universal params
-        float persistence = 14.8f;  // trail half-life in seconds
+        float persistence = 0.02f;  // trail half-life in seconds
         float colorShift = 0.10f;
-        bool flipY = false;
-        bool flipX = false;
-
+        
         // Active component selections
         Emitter emitter = EMITTER_ORBITALDOTS;
         Flow flow = FLOW_NOISE;
-
-        // Active modulators
-        bool useAmpMod = true;
     };
 
     CtVizConfig vizConfig;

@@ -32,7 +32,6 @@ namespace colorTrails {
     timers timings;     // timer inputs; all time/speed settings in one place
     modulators move;    // timer outputs; all time-based modulators in one place
 
-
     void calculate_modulators(timers &timings) {
 
             float runtime = fl::millis();
@@ -70,7 +69,7 @@ namespace colorTrails {
     //  MODCONFIG APPLICATOR
     // ═══════════════════════════════════════════════════════════════════
 
-    class Modulators {
+    /*class Modulators {
     public:
         // Read the raw modulator output for this config's modType + modTimer (native range)
         static float getModValue(const ModConfig& m) {
@@ -85,6 +84,6 @@ namespace colorTrails {
                 default:                    return 0.0f;
             }
         }
-    };
+    };*/
 
 } // namespace colorTrails
