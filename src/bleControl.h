@@ -990,7 +990,7 @@ uint8_t dummy = 1;
 
 void bleSetup() {
 
-      BLEDevice::init("Color Trails");
+      BLEDevice::init("Flow Fields");
       BLEDevice::setMTU(517);  // Request max MTU for larger JSON payloads
 
       pServer = BLEDevice::createServer();

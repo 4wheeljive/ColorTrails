@@ -66,12 +66,6 @@ namespace colorTrails {
 
     class Modulators {
     public:
-        // Configure a timer from a ModConfig (writes rate + offset into timings)
-        static void configureTimer(const ModConfig& m) {
-            timings.ratio[m.timer]  = m.rate;
-            timings.offset[m.timer] = m.offset;
-        }
-
         // Apply modulation to a base value using the selected waveform and operation
         static float apply(float base, const ModConfig& m) {
             if (m.type == MOD_NONE || m.level == 0.0f) return base;

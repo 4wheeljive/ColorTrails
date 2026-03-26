@@ -132,12 +132,24 @@ Each modulatable parameter has a companion `ModConfig` struct:
 - `timer` — which timer index (0–9) to use
 
 **UI-tunable** (wired through the 5-file cVar pattern):
-- `rate` — written to `timings.ratio[timer]` before `calculate_modulators()`, controls modulation speed
+- `rate` — UI adjustment to the base ratio (developer uses in `timings.ratio[timer]` formula)
 - `level` — modulation depth (0 = mod off)
 
 Convention: timers 0–5 for emitters, 6–9 for flow fields.
 
-Usage pattern: `configureTimer()` → `calculate_modulators()` → `Modulators::apply(base, modConfig)`
+Usage pattern: the developer writes `timings.ratio[i]` assignments directly in the emitter/flow function body (incorporating `rate`), calls `calculate_modulators()`, then calls `Modulators::apply(base, modConfig)`.
+
+```cpp
+// Example from emitOrbitalDots — all timing relationships visible together
+timings.ratio[0] = 0.0005f  + orbitalDots.modOrbitDiam.rate;   // timer 0: diameter breathing
+timings.ratio[2] = 0.00005f + orbitalDots.modOrbitSpeed.rate;  // timer 2: speed variation
+calculate_modulators(timings);
+float effOrbitSpeed = Modulators::apply(orbitalDots.orbitSpeed, orbitalDots.modOrbitSpeed);
+```
+
+### Emitter param instances live in emitters.h
+
+Struct definitions live in `colorTrailsTypes.h`, but instances with specific tuned values live in `emitters.h` right above their emitter functions. This keeps all of an emitter's parameters, modulation config, and ratio/offset assignments in one place for easy tuning.
 
 ---
 

@@ -1,6 +1,8 @@
 #pragma once
 
 //=====================================================================================
+//  NOTE: Flow Fields was initially called Color Trails. 
+//  It will take a little time to get everything renamed internally.  
 //
 //  colortrails began with a FastLED Reddit post by u/StefanPetrick:
 //  https://www.reddit.com/r/FastLED/comments/1rny5j3/i_used_codex_for_the_first_time/

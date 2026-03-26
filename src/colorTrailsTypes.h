@@ -386,50 +386,46 @@ namespace colorTrails {
     };
 
     struct ModConfig {
-        // Hardcoded by developer — architectural choices
+        // Hardcoded by developer — architectural choices, set on the instance in the emitter file
         ModType type  = MOD_NONE;   // which move.* output to read
         ModOp   op    = OP_SCALE;   // how the wave modifies the base value
-        uint8_t timer = 0;          // timer index (0–9)
+        uint8_t timer = 0;          // which timer index to read from (0–9)
 
         // UI-tunable via cVars — struct values are defaults, overwritten by syncFromCVars()
-        float   rate  = 0.0f;       // → timings.ratio[timer], controls modulation speed
+        float   rate  = 0.0f;       // UI adjustment to timings.ratio[timer] (developer uses in formula)
         float   level = 0.0f;       // modulation depth (0 = mod off)
-        float   offset = 0.0f;      // → timings.offset[timer], phase shift
     };
 
     // ═══════════════════════════════════════════════════════════════════
-    //  EMITTERS
+    //  EMITTER PARAM STRUCTS
     // ═══════════════════════════════════════════════════════════════════
+    //  Struct definitions only — instances live in emitters.h
+    //  alongside their functions so the developer can see and tune
+    //  all values in one place.
 
     struct OrbitalDotsParams {
-        uint8_t numDots = 3;
-        float orbitSpeed = 3.0f;
-        ModConfig modOrbitSpeed = {MOD_DIRECTIONAL_NOISE, OP_SCALE, 2, 0.00005f, 0.3f};
-        float dotDiam = 1.5f;
-        float orbitDiam = 10.f;
-        ModConfig modOrbitDiam = {MOD_RADIAL_NOISE, OP_SCALE, 0, 0.0005f, 0.5f};
+        uint8_t numDots;
+        float orbitSpeed;
+        ModConfig modOrbitSpeed;
+        float dotDiam;
+        float orbitDiam;
+        ModConfig modOrbitDiam;
     };
 
     struct SwarmingDotsParams {
-        uint8_t numDots = 3;        // number of dots (1–5, limited by num_timers=10)
-        float swarmSpeed = 0.5f;    // overall speed of swarming motion
-        float swarmSpread = 1.0f;   // 0 = tight cluster, 1 = normal, >1 = wide spread
-        float dotDiam = 1.5f;       // dot size
+        uint8_t numDots;
+        float swarmSpeed;
+        float swarmSpread;
+        float dotDiam;
     };
 
     struct LissajousParams {
-        float lineSpeed = 0.35f;
-        float lineAmp = (MIN_DIMENSION - 4) * 0.75f;
+        float lineSpeed;
+        float lineAmp;
     };
 
     struct BorderRectParams {
     };
-
-    // Live emitter param instances
-    OrbitalDotsParams   orbitalDots;
-    SwarmingDotsParams  swarmingDots;
-    LissajousParams     lissajous;
-    BorderRectParams    borderRect;
 
 
 

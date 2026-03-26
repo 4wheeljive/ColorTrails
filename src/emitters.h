@@ -9,12 +9,28 @@
 
 namespace colorTrails {
 
-    // Orbiting dots
+    // ═══════════════════════════════════════════════════════════════════
+    //  ORBITAL DOTS
+    // ═══════════════════════════════════════════════════════════════════
+
+    OrbitalDotsParams orbitalDots = {
+        .numDots    = 3,
+        .orbitSpeed = 3.0f,
+        .modOrbitSpeed = {MOD_DIRECTIONAL_NOISE, OP_SCALE, 2, 0.0f, 0.3f},
+        //                type                   op      timer rate  level
+        .dotDiam    = 1.5f,
+        .orbitDiam  = 10.f,
+        .modOrbitDiam = {MOD_RADIAL_NOISE, OP_SCALE, 0, 0.0f, 0.5f},
+        //               type              op      timer rate  level
+    };
+
     static void emitOrbitalDots(float t) {
 
-        // Configure timers for this emitter's modulated params
-        Modulators::configureTimer(orbitalDots.modOrbitSpeed);
-        Modulators::configureTimer(orbitalDots.modOrbitDiam);
+        // Base ratios — developer's artistic starting point
+        // rate (UI-tunable) adjusts these up/down
+        timings.ratio[0] = 0.0005f  + orbitalDots.modOrbitDiam.rate;    // timer 0: orbit diameter breathing
+        timings.ratio[2] = 0.00005f + orbitalDots.modOrbitSpeed.rate;   // timer 2: orbit speed variation
+
         calculate_modulators(timings);
 
         // Get effective values (base modified by modulator output)
@@ -35,7 +51,18 @@ namespace colorTrails {
         }
     }
 
-    // Swarming dots — variable number of dots moving in a loose shifting group.
+    // ═══════════════════════════════════════════════════════════════════
+    //  SWARMING DOTS
+    // ═══════════════════════════════════════════════════════════════════
+
+    SwarmingDotsParams swarmingDots = {
+        .numDots     = 3,
+        .swarmSpeed  = 0.5f,
+        .swarmSpread = 1.0f,
+        .dotDiam     = 1.5f,
+    };
+
+    // Variable number of dots moving in a loose shifting group.
     // Uses calculate_modulators() with 2 timers per dot (X and Y).
     // swarmSpread controls grouping (0 = clustered, 1 = independent, >1 = wide).
     // Max 5 dots (num_timers=10, 2 timers per dot).
@@ -99,7 +126,15 @@ namespace colorTrails {
         }
     }
 
-    // Lissajous line
+    // ═══════════════════════════════════════════════════════════════════
+    //  LISSAJOUS LINE
+    // ═══════════════════════════════════════════════════════════════════
+
+    LissajousParams lissajous = {
+        .lineSpeed = 0.35f,
+        .lineAmp   = (MIN_DIMENSION - 4) * 0.75f,
+    };
+
     static void emitLissajousLine(float t) {
         const float cx = (WIDTH  - 1) * 0.5f;
         const float cy = (HEIGHT - 1) * 0.5f;
@@ -118,7 +153,12 @@ namespace colorTrails {
         drawAAEndpointDisc(lx2, ly2, cb.r, cb.g, cb.b, 0.85f);
     }
 
-    // Rainbow border rectangle — reads from `borderRect`
+    // ═══════════════════════════════════════════════════════════════════
+    //  RAINBOW BORDER
+    // ═══════════════════════════════════════════════════════════════════
+
+    BorderRectParams borderRect;
+
     static void emitRainbowBorder(float t) {
         const int total = 2 * (WIDTH + HEIGHT) - 4;
         int idx = 0;
