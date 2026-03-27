@@ -34,12 +34,13 @@ namespace colorTrails {
 
         calculate_modulators(timings);
 
-        float currentSpeed = orbitalDots.orbitSpeed * (1.0f + move.directional_noise[0] * orbitalDots.modOrbitSpeed.modLevel);
+        float lSpeed = orbitalDots.modOrbitSpeed.modLevel;
+        float currentSpeed = orbitalDots.orbitSpeed * ((1.0f - lSpeed) + lSpeed * move.directional_noise[0]);
         orbitAngle += currentSpeed * dt;
 
         float modDiam = 0.5f + 0.5f * noiseX.noise(move.linear[1]);
-        float L = orbitalDots.modOrbitDiam.modLevel;
-        float swing = L * 6.0f * (modDiam - 0.5f);
+        float lDiam = orbitalDots.modOrbitDiam.modLevel;
+        float swing = lDiam * 6.0f * (modDiam - 0.5f);
 
         float fNumDots = static_cast<float>(orbitalDots.numDots);
         float ocx  = WIDTH  * 0.5f - 0.5f;
