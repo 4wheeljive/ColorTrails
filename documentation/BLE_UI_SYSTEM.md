@@ -1,8 +1,11 @@
-# AuroraPortal BLE/UI Control System
+# FlowFields BLE/UI Control System
+
+NOTE: This file was originally prepared as part of the AuroraPortal project. Certain elements no longer apply, such as PROGRAM and MODE. Important new elements include EMITTER and FLOW, which are not reflected here yet. Numerous examples of variable names below are not part of the current project, but the standardized naming convention still applies. There are also some different Parameter Regsitries and Auto-rendering grouped components. The former system where specific modes MODES belonged to specific PROGRAMS, and the associated UI rendering, is gone. The UI selector boxes for these were replaced by EMITTER and FLOW, which are completely independent. The lookup system for creating program-mode names no longer exists. The preset system is disabled and likely does not reflect the current program architecture. Various "sync state" functions are also different.      
+
 
 ## Overview
 
-The AuroraPortal uses a Web Bluetooth (BLE) bridge between a browser-based UI (`index.html`) and an ESP32 controller (`bleControl.h`). All communication is JSON-based (except raw button values), flowing over 4 BLE characteristics. The UI is built entirely with vanilla Web Components that auto-render controls based on the active "visualizer."
+FlowFields uses a Web Bluetooth (BLE) bridge between a browser-based UI (`index.html`) and an ESP32 controller (`bleControl.h`). All communication is JSON-based (except raw button values), flowing over 4 BLE characteristics. The UI is built entirely with vanilla Web Components that auto-render controls based on the active "visualizer."
 
 ---
 
@@ -47,36 +50,7 @@ On the UI side, `sendBusParamCharacteristic(paramId, value, busId)` handles this
 
 ---
 
-## 2. Visualizer Concept
-
-A **visualizer** is the fundamental unit of the control system. It identifies the current visual output and determines which parameter controls to display.
-
-### 2.1 Two Forms
-
-| Form | Example | Structure |
-|---|---|---|
-| **Modeless program** | `"dots"`, `"cube"` | Just the program name (lowercase) |
-| **Program-mode combination** | `"radii-octopus"`, `"animartrix-polarwaves"` | `programName-modeName` |
-
-### 2.2 Programs and Modes
-
-Programs are enumerated in both C++ and JS as parallel constants:
-
-```
-C++ enum:  RAINBOW=0, WAVES=1, BUBBLE=2, DOTS=3, FXWAVE2D=4, RADII=5,
-           ANIMARTRIX=6, TEST=7, SYNAPTIDE=8, CUBE=9, HORIZONS=10, AUDIOTEST=11
-```
-
-Only 4 programs have modes: WAVES (2), RADII (5), ANIMARTRIX (10), AUDIOTEST (10).
-
-`MODE_COUNTS[]` array (parallel index by program number) stores mode counts, with `0` for modeless programs.
-
-### 2.3 Visualizer Name Construction
-
-`VisualizerManager::getVisualizerName(PROGRAM, MODE)` on ESP32 and `getCurrentVisualizer()` in JS both produce the same string by:
-1. Lowercasing the program name
-2. If the program has modes, appending `-modeName` (also lowercase)
-
+## 2. Deprecated
 ---
 
 ## 3. Variable Naming Conventions
@@ -182,7 +156,6 @@ Components fall into two categories:
 | `ParameterSettings` | `<parameter-settings>` | Auto-renders sliders from `VISUALIZER_PARAMS[currentVisualizer]` |
 | `AudioSettings` | `<audio-settings>` | Auto-renders sliders from `AUDIO_PARAMS["audio"]` |
 | `BusSettings` | `<bus-settings>` | Renders 3 groups (A/B/C) of sliders from `BUS_PARAMETER_REGISTRY` |
-| `LayerSelector` | `<layer-selector>` | 9 layer checkboxes (sends `cxLayer1`..`cxLayer9`) |
 | `Presets` | `<preset-controls>` | Save (101-110) / Load (121-130) preset button grids |
 
 ### 5.2 Dynamic Visibility (`data-visualizers`)
@@ -407,9 +380,7 @@ syncInitialState()
 | 99 | Display off |
 | 101-120 | Save preset (value - 100 = preset number) |
 | 121-140 | Load preset (value - 120 = preset number) |
-| 151 | Horizons: rotate upper palette |
-| 152 | Horizons: rotate lower palette |
-| 153 | Horizons: restart |
+
 | 160 | Trigger (fxwave2d, animartrix) |
 
 ---
@@ -422,4 +393,4 @@ syncInitialState()
 | `src/bleControl.h` | BLE setup, characteristics, callbacks, processButton/Number/Checkbox, X-macro table, presets, state sync functions |
 | `src/audio/audioTypes.h` | `Bus` struct, `BusPreset`, `AudioFrame`, bin/bus definitions |
 | `src/audio/audioProcessing.h` | `handleBusParam()`, `handleGetBusParam()`, `initBus()`, audio pipeline, callback registration |
-| `src/programs/animartrix_detail.hpp` | `ModeAudioPreset`, `applyModeAudioPreset()`, animation patterns |
+

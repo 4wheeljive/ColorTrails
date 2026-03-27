@@ -54,7 +54,7 @@ namespace colorTrails {
 
                 // noise-based directional, offsets or factors, returns -1 to 1
                 move.directional_noise[i] =
-                    noiseX.noise(move.linear[i]);
+                    2.f * noiseX.noise(move.linear[i]);
 
                 // noise based angle offset, returns 0 to 2 * PI
                 move.radial_noise[i] =

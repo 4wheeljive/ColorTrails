@@ -1,12 +1,26 @@
 # ColorTrails Architecture & BLE/UI System Guide
 
+## Preliminary notes on state of this document
+NOTE: The former project name ColorTrails has been replaced by FlowFields.
+
+NOTE: This file was originally prepared as part of the AuroraPortal project. Certain elements no longer apply, such as PROGRAM and MODE. In some respects, EMITTER and FLOW replaced PROGRAM and MODE; but unlike PROGRAM and MODE, EMITTER and FLOW are completely independent. 
+
+KEY CHANGES NOT REFLECTED BELOW:
+- flowFields are now completely independent from emitters
+- there are now several flowFields, not just flow_noise
+- from a UI standpoint, "fadeRate" was replaced by a more human-intuitive "persistence" approach
+- numerous variable names have been shortened to reduce BLE traffic (e.g., xFrequency-->xFreq, yAmplitude-->yAmp)
+- project folders have changed: no more /programs; new /flowFields
+- some functionality has been moved to new header files
+- Certain "sync state" funbctions/logic may be different
+
 ## Overview
 
 ColorTrails is an ESP32 LED visualization program built on PlatformIO + FastLED. It renders color onto a 2D pixel grid using a component pipeline: **Emitters** inject color, **ColorFlowFields** advect it, and **Modulators** modify parameters over time. The result is continuously composited onto WxH float-precision RGB buffers and pushed to LEDs each frame.
 
-All parameters are controllable over BLE from a web-based UI served from `index.html`.
+Many parameters are controllable over BLE from a web-based UI served from `index.html`.
 
-Much of the visualization functionality was ported from Python to C++. The original Python files are in the /colorTrailsOrig folder. There is also a TRANSLATION_GUIDE.md that outlines many aspects of the conversion. The ColorTrails architecture has changed dramatically since  TRANSLATION_GUIDE.md was prepared, so certain aspects of the "target landing environment" may be different than described. 
+Much of the visualization functionality was ported from Python to C++. The original Python files are in the /colorTrailsOrig folder. There is also a TRANSLATION_GUIDE.md that outlines many aspects of the conversion. The ColorTrails architecture has changed dramatically since TRANSLATION_GUIDE.md was prepared, so certain aspects of the "target landing environment" may be different than described. 
 
 ---
 
@@ -27,51 +41,39 @@ Much of the visualization functionality was ported from Python to C++. The origi
 |-----------|---------|------------------------|
 | **Emitter** | Injects color onto the grid | OrbitalDots, LissajousLine, RainbowBorder |
 | **ColorFlowField** | Advects (shifts/blends) existing pixels | NoiseFlow |
-| **Modulator** | Time-varies flow field parameters | AmpMod (amplitude modulation via 1D Perlin) |
+| **Modulator** | 
 
-Each component type has its own parameter struct. Only one emitter and one flow field are active at a time. The active emitter is selected by `MODE`.
+Each component type has its own parameter struct. Only one emitter and one flow field are active at a time.
 
 ### Key Structs
 
 ```cpp
-// Each emitter owns its params AND a NoiseFlowParams with its preferred flow defaults
+
 struct OrbitalParams {
     float orbitSpeed, colorSpeed, circleDiam, orbitDiam;
-    NoiseFlowParams noiseFlow{...};  // emitter-specific noise defaults
 };
 
 struct LissajousParams {
     float endpointSpeed, colorShift, lineAmplitude;
-    NoiseFlowParams noiseFlow{...};
 };
 
 struct BorderRectParams {
     float colorShift;
-    NoiseFlowParams noiseFlow{...};
 };
 
 // Flow field params (live working instance — synced from cVars every frame)
 struct NoiseFlowParams {
     float xSpeed, ySpeed;           // noise scroll speed
-    float xAmplitude, yAmplitude;   // noise amplitude
+    float xAmplitude, ;   // noise amplitude
     float xFrequency, yFrequency;   // noise spatial scale
     float xShift, yShift;           // max pixel shift per row/column
-    bool  use2DNoise;               // 1D vs 2D Perlin
-};
-
-// Modulator
-struct AmpModParams {
-    float intensity, speed;
-    bool active;
 };
 
 // Top-level config binding everything together
 struct CtVizConfig {
     float fadeRate;
-    bool flipVertical, flipHorizontal;
     EmitterType emitter;      // selected by MODE
     FlowFieldType flowField;  // currently always FLOW_NOISE
-    bool useAmpMod;
 };
 ```
 
@@ -87,12 +89,7 @@ const FlowAdvectFn FLOW_ADVECT[]  = { noiseFlowAdvect };
 
 ### Noise Generators
 
-Two noise systems operate simultaneously:
-
-- **Spatial profiles** (Perlin1D or Perlin2D): Drive per-row and per-column shift amounts in the flow field. Controlled by `NoiseFlowParams`.
-- **Amplitude modulation** (Perlin1D): Slowly varies the flow field's xAmplitude/yAmplitude over time. Controlled by `AmpModParams`.
-
-Each emitter's `NoiseFlowParams` member holds defaults appropriate to that emitter's visual character. When the user switches modes (emitters), `pushDefaultsToCVars()` copies the active emitter's noise defaults into the live `noiseFlow` instance and the cVars.
+[previous description n/a]
 
 ---
 
@@ -128,23 +125,19 @@ Each modulatable parameter has a companion `ModConfig` struct:
 
 **Hardcoded** (developer architectural choices, not UI-exposed):
 - `type` — which `move.*` output to read (e.g. `MOD_DIRECTIONAL_NOISE`)
-- `op` — how the wave modifies the base value (`OP_SCALE` or `OP_ADD`)
 - `timer` — which timer index (0–9) to use
 
 **UI-tunable** (wired through the 5-file cVar pattern):
 - `rate` — UI adjustment to the base ratio (developer uses in `timings.ratio[timer]` formula)
 - `level` — modulation depth (0 = mod off)
 
-Convention: timers 0–5 for emitters, 6–9 for flow fields.
-
-Usage pattern: the developer writes `timings.ratio[i]` assignments directly in the emitter/flow function body (incorporating `rate`), calls `calculate_modulators()`, then calls `Modulators::apply(base, modConfig)`.
+Usage pattern: the developer writes `timings.ratio[i]` assignments directly in the emitter/flow function body (incorporating `rate`), calls `calculate_modulators()` 
 
 ```cpp
 // Example from emitOrbitalDots — all timing relationships visible together
-timings.ratio[0] = 0.0005f  + orbitalDots.modOrbitDiam.rate;   // timer 0: diameter breathing
-timings.ratio[2] = 0.00005f + orbitalDots.modOrbitSpeed.rate;  // timer 2: speed variation
-calculate_modulators(timings);
-float effOrbitSpeed = Modulators::apply(orbitalDots.orbitSpeed, orbitalDots.modOrbitSpeed);
+
+[previous description n/a]
+
 ```
 
 ### Emitter param instances live in emitters.h

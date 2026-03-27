@@ -15,30 +15,38 @@ namespace colorTrails {
 
     OrbitalDotsParams orbitalDots = {
         .numDots    = 3,
-        .orbitSpeed = 0.15f,
-        .modOrbitSpeed = {0, 0.0f, 0.3f},       // modTimer, modRate, modLevel                 
+        .orbitSpeed = 2.0f,
+        .modOrbitSpeed = {0, 1.0f, 1.0f},       // modTimer, modRate, modLevel                 
         .dotDiam    = 1.5f,
         .orbitDiam  = MIN_DIMENSION * 0.3f, 
-        .modOrbitDiam = {1, 0.0f, 0.5f}         // modTimer, modRate, modLevel
+        .modOrbitDiam = {1, 1.0f, 1.0f}         // modTimer, modRate, modLevel
     };
 
     static void emitOrbitalDots(float t) {
-        
+        static float orbitAngle = 0.0f;
+        static unsigned long lastOrbitMs = 0;
+        unsigned long now = fl::millis();
+        float dt = (now - lastOrbitMs) * 0.001f;
+        lastOrbitMs = now;
+
+        timings.ratio[0] = 0.00006f * orbitalDots.modOrbitSpeed.modRate;
         timings.ratio[1] = 0.0005f * orbitalDots.modOrbitDiam.modRate;
-        //float modDiam = fl::map_range_clamped<float, float>(noiseX.noise(move.linear[1]), -0.7f, 0.7f, 0.0f, 1.0f);
-        float modDiam = 0.5f + 0.5f * noiseX.noise(move.linear[1]); 
-  
+
         calculate_modulators(timings);
+
+        float currentSpeed = orbitalDots.orbitSpeed * (1.0f + move.directional_noise[0] * orbitalDots.modOrbitSpeed.modLevel);
+        orbitAngle += currentSpeed * dt;
+
+        float modDiam = 0.5f + 0.5f * noiseX.noise(move.linear[1]);
+        float L = orbitalDots.modOrbitDiam.modLevel;
+        float swing = L * 6.0f * (modDiam - 0.5f);
 
         float fNumDots = static_cast<float>(orbitalDots.numDots);
         float ocx  = WIDTH  * 0.5f - 0.5f;
         float ocy  = HEIGHT * 0.5f - 0.5f;
-        float L = orbitalDots.modOrbitDiam.modLevel;
-        float swing = L * 6.0f * (modDiam - 0.5f);
-        float orad = fmaxf(orbitalDots.orbitDiam * (1.0f + swing), orbitalDots.dotDiam);  
-        float base = t * orbitalDots.orbitSpeed;
+        float orad = fmaxf(orbitalDots.orbitDiam * (1.0f + swing), orbitalDots.dotDiam);
         for (int i = 0; i < orbitalDots.numDots; i++) {
-            float a  = base + i * (2.0f * CT_PI / fNumDots);
+            float a  = orbitAngle + i * (2.0f * CT_PI / fNumDots);
             float cx = ocx + fl::cosf(a) * orad;
             float cy = ocy + fl::sinf(a) * orad;
             ColorF c = rainbow(t, vizConfig.colorShift, i / fNumDots);
