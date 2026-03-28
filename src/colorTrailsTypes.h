@@ -349,16 +349,10 @@ namespace colorTrails {
     using FlowPrepFn    = void(*)(float t);
     using FlowAdvectFn  = void(*)(float dt);
 
-    // ═══════════════════════════════════════════════════════════════════
-    //  EMITTERS
-    // ═══════════════════════════════════════════════════════════════════
-
-    // --- Emitter parameter structs ---
 
     // ═══════════════════════════════════════════════════════════════════
     //  MODULATION TYPES
     // ═══════════════════════════════════════════════════════════════════
-
 
     struct ModConfig {
         // Hardcoded by developer — architectural choices, set on the instance in the emitter file
@@ -372,9 +366,8 @@ namespace colorTrails {
     // ═══════════════════════════════════════════════════════════════════
     //  EMITTER PARAM STRUCTS
     // ═══════════════════════════════════════════════════════════════════
-    //  Struct definitions only — instances live in emitters.h
-    //  alongside their functions so the developer can see and tune
-    //  all values in one place.
+    //  Struct definitions only — instances live in emitters.h  alongside their functions 
+    //  so the developer can see and tune all values in one place.
 
     struct OrbitalDotsParams {
         uint8_t numDots;
@@ -414,9 +407,9 @@ namespace colorTrails {
     // ═══════════════════════════════════════════════════════════════════
 
     struct CtVizConfig {
-        // Universal params
+        // Global params
         float persistence = 0.02f;  // trail half-life in seconds
-        float colorShift = 0.10f;
+        float colorShift = 0.20f;
         
         // Active component selections
         Emitter emitter = EMITTER_ORBITALDOTS;

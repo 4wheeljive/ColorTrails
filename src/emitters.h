@@ -22,41 +22,6 @@ namespace colorTrails {
         .modOrbitDiam = {1, 1.0f, 1.0f}         // modTimer, modRate, modLevel
     };
 
-    /* Old emitOrbitalDots
-    static void emitOrbitalDots(float t) {
-        static float orbitAngle = 0.0f;
-        static unsigned long lastOrbitMs = 0;
-        unsigned long now = fl::millis();
-        float dt = (now - lastOrbitMs) * 0.001f;
-        lastOrbitMs = now;
-
-        timings.ratio[0] = 0.00006f * orbitalDots.modOrbitSpeed.modRate;
-        timings.ratio[1] = 0.0005f * orbitalDots.modOrbitDiam.modRate;
-
-        calculate_modulators(timings);
-
-        float lSpeed = orbitalDots.modOrbitSpeed.modLevel;
-        float currentSpeed = orbitalDots.orbitSpeed * ((1.0f - lSpeed) + lSpeed * move.directional_noise[0]);
-        orbitAngle += currentSpeed * dt;
-
-        float modDiam = 0.5f + 0.5f * noiseX.noise(move.linear[1]);
-        float lDiam = orbitalDots.modOrbitDiam.modLevel;
-        float swing = lDiam * 6.0f * (modDiam - 0.5f);
-
-        float fNumDots = static_cast<float>(orbitalDots.numDots);
-        float ocx  = WIDTH  * 0.5f - 0.5f;
-        float ocy  = HEIGHT * 0.5f - 0.5f;
-        float orad = fmaxf(orbitalDots.orbitDiam * (1.0f + swing), orbitalDots.dotDiam);
-        for (int i = 0; i < orbitalDots.numDots; i++) {
-            float a  = orbitAngle + i * (2.0f * CT_PI / fNumDots);
-            float cx = ocx + fl::cosf(a) * orad;
-            float cy = ocy + fl::sinf(a) * orad;
-            ColorF c = rainbow(t, vizConfig.colorShift, i / fNumDots);
-            drawDot(cx, cy, orbitalDots.dotDiam, c.r, c.g, c.b);
-        }
-    }*/
-
-    // New emitOrbitalDots
     static void emitOrbitalDots(float t) {
         static float orbitAngle = 0.0f;
         
@@ -101,7 +66,6 @@ namespace colorTrails {
         orbitAngle += currentSpeed * dt;
 
         // Diameter modulation:
-        // convert centered bipolar noise [-1, 1] to unipolar [0, 1]
         const float modDiam = move.directional_noise_norm[diamMod.modTimer];
 
         const float lDiam = diamMod.modLevel;
@@ -213,8 +177,6 @@ namespace colorTrails {
         // 3) Artistic application: spread modulation
         // -----------------------------------------------------------------
 
-        // Convert centered bipolar noise [-1, 1] to unipolar [0, 1]
-        const float spreadSignal = move.directional_noise[spreadMod.modTimer];
         float modSpread = move.directional_noise_norm[spreadMod.modTimer];
 
         // Current behavior: spread modulation adds above the base value
@@ -237,71 +199,6 @@ namespace colorTrails {
         }
     }
     
-    
-    /*static void emitSwarmingDots(float t) {
-
-        uint8_t n = swarmingDots.numDots;
-        float fNumDots = static_cast<float>(n);
-
-        timings.ratio[10] = 0.00055f * swarmingDots.modSwarmSpread.modRate;
-
-        // 2 timers per dot: [d*2]=X, [d*2+1]=Y (up to 10 timers for 5 dots)
-        // Similar ratios keep dots moving at comparable speeds;
-        // irrational relationships prevent exact repetition.
-        static const float baseRatios[10] = {
-            0.00173f, 0.00131f,   // dot 0: X, Y
-            0.00197f, 0.00149f,   // dot 1: X, Y
-            0.00211f, 0.00113f,   // dot 2: X, Y
-            0.00157f, 0.00189f,   // dot 3: X, Y
-            0.00223f, 0.00167f    // dot 4: X, Y
-        };
-        // Offsets: each dot's Y is ~quarter-period ahead of its X
-        // to create elliptical paths instead of diagonal lines
-        static const float baseOffsets[10] = {
-               0.0f,  900.0f,    // dot 0
-             600.0f, 1700.0f,    // dot 1
-            1300.0f, 2400.0f,    // dot 2
-            1900.0f, 3100.0f,    // dot 3
-            2600.0f, 3800.0f     // dot 4
-        };
-
-        uint8_t numTimers = n * 2;
-        for (uint8_t i = 0; i < numTimers; i++) {
-            timings.ratio[i]  = baseRatios[i] * swarmingDots.swarmSpeed;
-            timings.offset[i] = baseOffsets[i];
-        }
-
-        calculate_modulators(timings);
-
-        // Each dot: dedicated X (even index) and Y (odd index)
-        float dotX[5], dotY[5];
-        float cenX = 0.0f, cenY = 0.0f;
-        for (int d = 0; d < n; d++) {
-            dotX[d] = move.directional_sine[d * 2];
-            dotY[d] = move.directional_sine[d * 2 + 1];
-            cenX += dotX[d];
-            cenY += dotY[d];
-        }
-
-        // Group center
-        cenX /= fNumDots;
-        cenY /= fNumDots;
-
-        // Blend each dot between center and its own position via swarmSpread
-        float modSpread = fl::map_range_clamped<float, float>(noiseX.noise(move.linear[10]), -0.5f, 0.5f, 0.0f, 1.0f);
-        float spread = swarmingDots.swarmSpread + (modSpread * swarmingDots.modSwarmSpread.modLevel);
-
-        for (int d = 0; d < n; d++) {
-            float sx = cenX + spread * (dotX[d] - cenX);
-            float sy = cenY + spread * (dotY[d] - cenY);
-
-            float cx = (WIDTH  - 1) * 0.5f * (1.0f + sx);
-            float cy = (HEIGHT - 1) * 0.5f * (1.0f + sy);
-
-            ColorF c = rainbow(t, vizConfig.colorShift, d / fNumDots);
-            drawDot(cx, cy, swarmingDots.dotDiam, c.r, c.g, c.b);
-        }
-    }*/
 
     // ═══════════════════════════════════════════════════════════════════
     //  AUDIO DOTS
@@ -335,6 +232,7 @@ namespace colorTrails {
         }
     }
 
+    
     // ═══════════════════════════════════════════════════════════════════
     //  LISSAJOUS LINE
     // ═══════════════════════════════════════════════════════════════════
