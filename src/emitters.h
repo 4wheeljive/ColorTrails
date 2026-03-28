@@ -61,18 +61,16 @@ namespace colorTrails {
         // Speed modulation intentionally allows reversal:
         // modLevel = 0 -> base speed only
         // modLevel = 1 -> full bipolar modulation, including negative speed
-        const float lSpeed = speedMod.modLevel;
         const float currentSpeed =
             orbitalDots.orbitSpeed *
-            ((1.0f - lSpeed) + lSpeed * speedSignal);
+            ((1.0f - speedMod.modLevel) + speedMod.modLevel * speedSignal);
 
         orbitAngle += currentSpeed * dt;
 
         // Diameter modulation:
         const float modDiam = move.directional_noise_norm[diamMod.modTimer];
 
-        const float lDiam = diamMod.modLevel;
-        const float swing = lDiam * 6.0f * (modDiam - 0.5f);
+        const float swing = diamMod.modLevel * 6.0f * (modDiam - 0.5f);
 
         const float fNumDots = static_cast<float>(orbitalDots.numDots);
         const float ocx = WIDTH * 0.5f - 0.5f;

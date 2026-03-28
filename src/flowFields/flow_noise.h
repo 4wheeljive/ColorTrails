@@ -23,80 +23,115 @@ namespace colorTrails {
         float yFreq = 0.32f;   // Noise spatial scale (row axis) (aka "yScale")
         float xShift = 1.8f;    // Max horizontal shift per row  (pixels)
         float yShift = 1.8f;    // Max vertical shift per column (pixels)
-        float noiseFreq = 0.23f;  // need to build out and enable BLE/UI control
-            
-        // Shared amplitude breathing control:
-        // modTimer     -> X amplitude channel
-        // modTimer + 1 -> Y amplitude channel
-        ModConfig modAmp = {0, 1.0f, 0.0f};   // modTimer, modRate, modLevel 
+        float noiseFreq = 0.23f;  // effectively a multiplier of xFreq and yFreq
         uint8_t numActiveTimers = 2;
+
+        // Shared UI-facing modulation controls.
+        // Each ModConfig uses modTimer for X and modTimer + 1 for Y.
+        ModConfig modAmp   = {0, 1.0f, 0.0f};
+        ModConfig modSpeed = {2, 1.0f, 0.0f};
+        ModConfig modShift = {4, 1.0f, 0.0f};
     };
    
     NoiseFlowParams noiseFlow;
 
     static void sampleProfile2D(const Perlin2D &n, float t, float speed,
-                                float amp, float scale, int count, float *out) {
-        //const float freq   = 0.23f;
+                            float amp, float scale, int count, float *out) {
         const float scrollY = t * speed;
+
         for (int i = 0; i < count; i++) {
-            float v = n.noise(i * noiseFlow.noiseFreq * scale, scrollY);
-            out[i]  = clampf(v * amp, -1.0f, 1.0f);
+            const float v = n.noise(i * noiseFlow.noiseFreq * scale, scrollY);
+            out[i] = clampf(v * amp, -1.0f, 1.0f);
         }
     }
 
     // --- Prepare: build noise profiles, apply modulator(s) ---
-
     static void noiseFlowPrepare(float t) {
-        const ModConfig& ampMod = noiseFlow.modAmp;
-
-        // Reserve a structural pair of timer channels:
-        // X amplitude uses modTimer, Y amplitude uses modTimer + 1
-        const uint8_t xAmpTimer = ampMod.modTimer;
-        const uint8_t yAmpTimer = ampMod.modTimer + 1;
-
         // -----------------------------------------------------------------
-        // 1) Plumbing: configure shared breathing channels
-        //    Same user-controlled rate, slightly different internal timing
-        //    and offset so X/Y don't inhale and exhale identically.
+        // 1) Plumbing: assign paired modulation channels
         // -----------------------------------------------------------------
+        const ModConfig& ampMod   = noiseFlow.modAmp;
+        const ModConfig& speedMod = noiseFlow.modSpeed;
+        const ModConfig& shiftMod = noiseFlow.modShift;
+
+        const uint8_t xAmpTimer   = ampMod.modTimer;
+        const uint8_t yAmpTimer   = ampMod.modTimer + 1;
+
+        const uint8_t xSpeedTimer = speedMod.modTimer;
+        const uint8_t ySpeedTimer = speedMod.modTimer + 1;
+
+        const uint8_t xShiftTimer = shiftMod.modTimer;
+        const uint8_t yShiftTimer = shiftMod.modTimer + 1;
+
+        // Amplitude: medium breathing
         timings.ratio[xAmpTimer]  = 0.00043f * ampMod.modRate;
         timings.offset[xAmpTimer] = 0.0f;
-
         timings.ratio[yAmpTimer]  = 0.00049f * ampMod.modRate;
         timings.offset[yAmpTimer] = 1700.0f;
 
-        calculate_modulators(timings, noiseFlow.numActiveTimers);
+        // Speed: slightly slower, allows directional reversal around base
+        timings.ratio[xSpeedTimer]  = 0.00027f * speedMod.modRate;
+        timings.offset[xSpeedTimer] = 0.0f;
+        timings.ratio[ySpeedTimer]  = 0.00031f * speedMod.modRate;
+        timings.offset[ySpeedTimer] = 2100.0f;
+
+        // Shift: slower structural breathing
+        timings.ratio[xShiftTimer]  = 0.00018f * shiftMod.modRate;
+        timings.offset[xShiftTimer] = 0.0f;
+        timings.ratio[yShiftTimer]  = 0.00022f * shiftMod.modRate;
+        timings.offset[yShiftTimer] = 3200.0f;
+
+        calculate_modulators(timings, 6);
 
         // -----------------------------------------------------------------
-        // 2) Signal acquisition: centered bipolar breathing signals [-1, 1]
+        // 2) Signal acquisition: centered bipolar control signals [-1, 1]
         // -----------------------------------------------------------------
-        const float xBreath = move.directional_noise[xAmpTimer];
-        const float yBreath = move.directional_noise[yAmpTimer];
+        const float xAmpSignal   = move.directional_noise[xAmpTimer];
+        const float yAmpSignal   = move.directional_noise[yAmpTimer];
+
+        const float xSpeedSignal = move.directional_noise[xSpeedTimer];
+        const float ySpeedSignal = move.directional_noise[ySpeedTimer];
+
+        const float xShiftSignal = move.directional_noise[xShiftTimer];
+        const float yShiftSignal = move.directional_noise[yShiftTimer];
 
         // -----------------------------------------------------------------
-        // 3) Artistic application: multiplicative breathing around base amp
-        //
-        // Centered around 1.0 so the base value remains the midpoint.
-        // 0.85f gives a strong but still usable swing without going negative
-        // in normal 0..1 modLevel use.
+        // 3) Artistic application
         // -----------------------------------------------------------------
-        const float level = ampMod.modLevel;
-        const float breathDepth = 0.85f;
 
-        float workXAmp = noiseFlow.xAmp * (1.0f + level * breathDepth * xBreath);
-        float workYAmp = noiseFlow.yAmp * (1.0f + level * breathDepth * yBreath);
-
-        // Keep amplitudes non-negative
+        // Amplitude: centered multiplicative breathing around base value.
+        const float ampDepth = 0.85f;
+        float workXAmp = noiseFlow.xAmp * (1.0f + ampMod.modLevel * ampDepth * xAmpSignal);
+        float workYAmp = noiseFlow.yAmp * (1.0f + ampMod.modLevel * ampDepth * yAmpSignal);
         workXAmp = fmaxf(0.0f, workXAmp);
         workYAmp = fmaxf(0.0f, workYAmp);
 
-        sampleProfile2D(noise2X, t, noiseFlow.xSpeed, workXAmp,
+        // Speed: centered multiplicative breathing around base value.
+        // Leave unclamped so low base values can reverse direction.
+        const float speedDepth = 0.90f;
+        float workXSpeed = noiseFlow.xSpeed * (1.0f + speedMod.modLevel * speedDepth * xSpeedSignal);
+        float workYSpeed = noiseFlow.ySpeed * (1.0f + speedMod.modLevel * speedDepth * ySpeedSignal);
+
+        // Shift: centered multiplicative breathing around base value.
+        // Clamp nonnegative because "max shift" is generally magnitude-like.
+        const float shiftDepth = 0.75f;
+        float workXShift = noiseFlow.xShift * (1.0f + shiftMod.modLevel * shiftDepth * xShiftSignal);
+        float workYShift = noiseFlow.yShift * (1.0f + shiftMod.modLevel * shiftDepth * yShiftSignal);
+        workXShift = fmaxf(0.0f, workXShift);
+        workYShift = fmaxf(0.0f, workYShift);
+
+        sampleProfile2D(noise2X, t, workXSpeed, workXAmp,
                         noiseFlow.xFreq, WIDTH, xProf);
 
-        sampleProfile2D(noise2Y, t, noiseFlow.ySpeed, workYAmp,
+        sampleProfile2D(noise2Y, t, workYSpeed, workYAmp,
                         noiseFlow.yFreq, HEIGHT, yProf);
-    }
 
+        // If noiseFlowAdvect() consumes noiseFlow.xShift / yShift directly,
+        // you will want to route workXShift / workYShift there as well.
+        // For now these are prepared here so the modulation pattern is defined.
+        (void)workXShift;
+        (void)workYShift;
+    }
 
     // --- Advect: two-pass fractional advection (bilinear interpolation) + fade ---
 
