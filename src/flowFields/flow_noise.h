@@ -16,16 +16,22 @@ namespace colorTrails {
     struct NoiseFlowParams {
         float xSpeed = -0.25f;   // Noise scroll speed  (column axis)
         float ySpeed = -0.25f;   // Noise scroll speed  (row axis)
-        float xAmp =  1.00f;   // Noise amplitude     (column axis)
-        float yAmp =  1.00f;   // Noise amplitude     (row axis)
-        float xFreq =  0.33f;   // Noise spatial scale (column axis) (aka "xScale")
-        float yFreq =  0.32f;   // Noise spatial scale (row axis) (aka "yScale")
-        float xShift =  1.8f;    // Max horizontal shift per row  (pixels)
-        float yShift =  1.8f;    // Max vertical shift per column (pixels)
-        float noiseFreq = 0.23f;  // TODO: build out and enable BLE/UI control 
+        float xAmp = 1.00f;   // Noise amplitude     (column axis)
+        float yAmp = 1.00f;   // Noise amplitude     (row axis)
+        float xFreq = 0.33f;   // Noise spatial scale (column axis) (aka "xScale")
+        float yFreq = 0.32f;   // Noise spatial scale (row axis) (aka "yScale")
+        float xShift = 1.8f;    // Max horizontal shift per row  (pixels)
+        float yShift = 1.8f;    // Max vertical shift per column (pixels)
+        float noiseFreq = 0.23f;  // need to build out and enable BLE/UI control
+            
+        // Shared amplitude breathing control:
+        // modTimer     -> X amplitude channel
+        // modTimer + 1 -> Y amplitude channel
+        ModConfig modAmp = {0, 1.0f, 0.0f};   // modTimer, modRate, modLevel 
+        uint8_t numActiveTimers = 2;
     };
    
-    NoiseFlowParams     noiseFlow;
+    NoiseFlowParams noiseFlow;
 
     static void sampleProfile2D(const Perlin2D &n, float t, float speed,
                                 float amp, float scale, int count, float *out) {
@@ -39,7 +45,7 @@ namespace colorTrails {
 
     // --- Prepare: build noise profiles, apply modulator(s) ---
 
-    static void noiseFlowPrepare(float t) {
+    /*static void noiseFlowPrepare(float t) {
         // Working copies of amplitude
         float workXAmp = noiseFlow.xAmp;
         float workYAmp = noiseFlow.yAmp;
@@ -48,7 +54,70 @@ namespace colorTrails {
                         noiseFlow.xFreq, WIDTH,  xProf);
         sampleProfile2D(noise2Y, t, noiseFlow.ySpeed, workYAmp,
                         noiseFlow.yFreq, HEIGHT, yProf);
+    }*/
+
+
+
+    static void noiseFlowPrepare(float t) {
+        const ModConfig& ampMod = noiseFlow.modAmp;
+
+        // Reserve a structural pair of timer channels:
+        // X amplitude uses modTimer, Y amplitude uses modTimer + 1
+        const uint8_t xAmpTimer = ampMod.modTimer;
+        const uint8_t yAmpTimer = ampMod.modTimer + 1;
+
+        // -----------------------------------------------------------------
+        // 1) Plumbing: configure shared breathing channels
+        //    Same user-controlled rate, slightly different internal timing
+        //    and offset so X/Y don't inhale and exhale identically.
+        // -----------------------------------------------------------------
+        timings.ratio[xAmpTimer]  = 0.00043f * ampMod.modRate;
+        timings.offset[xAmpTimer] = 0.0f;
+
+        timings.ratio[yAmpTimer]  = 0.00049f * ampMod.modRate;
+        timings.offset[yAmpTimer] = 1700.0f;
+
+        calculate_modulators(timings, noiseFlow.numActiveTimers);
+
+        // -----------------------------------------------------------------
+        // 2) Signal acquisition: centered bipolar breathing signals [-1, 1]
+        // -----------------------------------------------------------------
+        const float xBreath = move.directional_noise[xAmpTimer];
+        const float yBreath = move.directional_noise[yAmpTimer];
+
+        // -----------------------------------------------------------------
+        // 3) Artistic application: multiplicative breathing around base amp
+        //
+        // Centered around 1.0 so the base value remains the midpoint.
+        // 0.85f gives a strong but still usable swing without going negative
+        // in normal 0..1 modLevel use.
+        // -----------------------------------------------------------------
+        const float level = ampMod.modLevel;
+        const float breathDepth = 0.85f;
+
+        float workXAmp = noiseFlow.xAmp * (1.0f + level * breathDepth * xBreath);
+        float workYAmp = noiseFlow.yAmp * (1.0f + level * breathDepth * yBreath);
+
+        // Keep amplitudes non-negative
+        workXAmp = fmaxf(0.0f, workXAmp);
+        workYAmp = fmaxf(0.0f, workYAmp);
+
+        sampleProfile2D(noise2X, t, noiseFlow.xSpeed, workXAmp,
+                        noiseFlow.xFreq, WIDTH, xProf);
+
+        sampleProfile2D(noise2Y, t, noiseFlow.ySpeed, workYAmp,
+                        noiseFlow.yFreq, HEIGHT, yProf);
     }
+
+
+
+
+
+
+
+
+
+
 
     // --- Advect: two-pass fractional advection (bilinear interpolation) + fade ---
 

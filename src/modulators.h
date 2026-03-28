@@ -12,7 +12,7 @@ namespace colorTrails {
     //  TIMER / MODULATOR ENGINE
     // ═══════════════════════════════════════════════════════════════════
 
-    #define num_timers 12
+    #define num_timers 20
 
     struct timers {
         float offset[num_timers];  // timers can be separated by a time offset
@@ -39,10 +39,10 @@ namespace colorTrails {
     timers timings;     // timer inputs; all time/speed settings in one place
     modulators move;    // timer outputs; all time-based modulators in one place
 
-    void calculate_modulators(timers &timings) {
+    void calculate_modulators(timers &timings, uint8_t numActiveTimers) {
         const float runtime = fl::millis();
 
-        for (uint8_t i = 0; i < num_timers; i++) {
+        for (uint8_t i = 0; i < numActiveTimers; i++) {
             // -----------------------------------------------------------------
             // Base time progression
             // -----------------------------------------------------------------

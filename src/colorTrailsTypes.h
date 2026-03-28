@@ -125,7 +125,7 @@ namespace colorTrails {
         // At the theoretical max (xf=0.5, opposing gradients): ga=0.5, gb=0.5, u=0.5 → output = 0.5. 
         // The actual range is ±0.5, not ±1.
 
-        // Classic 1-D Perlin: fade, grad, lerp — returns roughly [-1, 1].
+        // 1D Perlin: fade, grad, lerp — returns roughly [-0.5, 0.5].
         float noise(float x) const {
             int   xi = ((int)fl::floorf(x)) & 255;
             float xf = x - fl::floorf(x);
@@ -356,7 +356,7 @@ namespace colorTrails {
 
     struct ModConfig {
         // Hardcoded by developer — architectural choices, set on the instance in the emitter file
-        uint8_t modTimer = 0;          // which timer index to read from (0–9)
+        uint8_t modTimer = 0;          // which timer index to read from (0 to num_timers)
 
         // UI-tunable via cVars — struct values are defaults, overwritten by syncFromCVars()
         float   modRate  = 0.0f;       // UI adjustment to timings.ratio[timer] (developer uses in formula)
@@ -369,37 +369,42 @@ namespace colorTrails {
     //  Struct definitions only — instances live in emitters.h  alongside their functions 
     //  so the developer can see and tune all values in one place.
 
-    struct OrbitalDotsParams {
+    /*struct OrbitalDotsParams {
         uint8_t numDots;
         float orbitSpeed;
         ModConfig modOrbitSpeed;
         float dotDiam;
         float orbitDiam;
         ModConfig modOrbitDiam;
-    };
+        uint8_t numActiveTimers;
+    };*/
     
-    struct AudioDotsParams {
+    /*struct AudioDotsParams {
         float dotDiam;
-    };
+        uint8_t numActiveTimers;
+    };*/
 
-    struct SwarmingDotsParams {
+    /*struct SwarmingDotsParams {
         uint8_t numDots;
         float swarmSpeed;
         ModConfig modSwarmSpeed;
         float swarmSpread;
         ModConfig modSwarmSpread;
         float dotDiam;
-    };
+        uint8_t numActiveTimers;
+    };*/
 
-    struct LissajousParams {
+    /*struct LissajousParams {
         float lineSpeed;
         ModConfig modLineSpeed;
         float lineAmp;
         ModConfig modLineAmp;
-    };
+        uint8_t numActiveTimers;
+    };*/
 
-    struct BorderRectParams {
-    };
+    /*struct BorderRectParams {
+        uint8_t numActiveTimers;
+    };*/
 
 
     // ═══════════════════════════════════════════════════════════════════

@@ -13,14 +13,17 @@ namespace colorTrails {
     //  ORBITAL DOTS
     // ═══════════════════════════════════════════════════════════════════
 
-    OrbitalDotsParams orbitalDots = {
-        .numDots    = 3,
-        .orbitSpeed = 2.0f,
-        .modOrbitSpeed = {0, 1.0f, 1.0f},       // modTimer, modRate, modLevel                 
-        .dotDiam    = 1.5f,
-        .orbitDiam  = MIN_DIMENSION * 0.3f, 
-        .modOrbitDiam = {1, 1.0f, 1.0f}         // modTimer, modRate, modLevel
+    struct OrbitalDotsParams {
+        uint8_t numDots    = 3;
+        float orbitSpeed = 2.0f;
+        ModConfig modOrbitSpeed = {0, 1.0f, 1.0f};       // modTimer, modRate, modLevel                 
+        float dotDiam    = 1.5f;
+        float orbitDiam  = MIN_DIMENSION * 0.3f; 
+        ModConfig modOrbitDiam = {1, 1.0f, 1.0f};         // modTimer, modRate, modLevel
+        uint8_t numActiveTimers = 2;
     };
+
+    OrbitalDotsParams orbitalDots; 
 
     static void emitOrbitalDots(float t) {
         static float orbitAngle = 0.0f;
@@ -42,7 +45,7 @@ namespace colorTrails {
         timings.ratio[speedMod.modTimer] = 0.00006f * speedMod.modRate;
         timings.ratio[diamMod.modTimer]  = 0.0005f  * diamMod.modRate;
 
-        calculate_modulators(timings);
+        calculate_modulators(timings, orbitalDots.numActiveTimers);
 
         // -----------------------------------------------------------------
         // 2) Signal acquisition: get normalized modulation signals
@@ -96,13 +99,16 @@ namespace colorTrails {
     //  SWARMING DOTS
     // ═══════════════════════════════════════════════════════════════════
 
-    SwarmingDotsParams swarmingDots = {
-        .numDots     = 3,
-        .swarmSpeed  = 0.5f,
-        .swarmSpread = 0.5f,
-        .modSwarmSpread = {10, 1.0f, 1.0f},       // modTimer, modRate, modLevel 
-        .dotDiam     = 1.5f,
+    struct SwarmingDotsParams {
+        uint8_t numDots = 3;
+        float swarmSpeed = 0.5f;
+        float swarmSpread = 0.5f;
+        ModConfig modSwarmSpread = {10, 1.0f, 1.0f};       // modTimer, modRate, modLevel 
+        float dotDiam = 1.5f;
+        uint8_t numActiveTimers = 11;
     };
+
+    SwarmingDotsParams swarmingDots;
 
     // Variable number of dots moving in a loose shifting group.
     // Uses calculate_modulators() with 2 timers per dot (X and Y).
@@ -149,7 +155,7 @@ namespace colorTrails {
             timings.offset[i] = baseOffsets[i];
         }
 
-        calculate_modulators(timings);
+        calculate_modulators(timings, swarmingDots.numActiveTimers);
 
         // -----------------------------------------------------------------
         // 2) Signal acquisition: sample structural motion signals
@@ -211,9 +217,12 @@ namespace colorTrails {
         cFrame = &myAudio::updateAudioFrame(b);
     }
 
-    AudioDotsParams audioDots = {
-        .dotDiam = 3.0f,
+    struct AudioDotsParams {
+        uint8_t dotDiam = 3.0f;
+        //uint8_t numActiveTimers = 0;
     };
+
+    AudioDotsParams audioDots;
 
     static void emitAudioDots(float t) {
 
@@ -237,10 +246,13 @@ namespace colorTrails {
     //  LISSAJOUS LINE
     // ═══════════════════════════════════════════════════════════════════
 
-    LissajousParams lissajous = {
-        .lineSpeed = 0.35f,
-        .lineAmp   = (MIN_DIMENSION - 4) * 0.75f,
+    struct LissajousParams {
+        float lineSpeed = 0.35f;
+        float lineAmp = (MIN_DIMENSION - 4) * 0.75f;
+        //uint8_t numActiveTimers;
     };
+
+    LissajousParams lissajous;
 
     static void emitLissajousLine(float t) {
         const float cx = (WIDTH  - 1) * 0.5f;
@@ -264,7 +276,9 @@ namespace colorTrails {
     //  RAINBOW BORDER
     // ═══════════════════════════════════════════════════════════════════
 
-    BorderRectParams borderRect;
+
+    //struct BorderRectParams {};
+    //BorderRectParams borderRect;
 
     static void emitRainbowBorder(float t) {
         const int total = 2 * (WIDTH + HEIGHT) - 4;
