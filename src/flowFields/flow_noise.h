@@ -36,7 +36,7 @@ namespace colorTrails {
 
     static void sampleProfile2D(const Perlin2D &n, float t, float speed,
                                 float amp, float scale, int count, float *out) {
-        const float freq   = 0.23f;
+        //const float freq   = 0.23f;
         const float scrollY = t * speed;
         for (int i = 0; i < count; i++) {
             float v = n.noise(i * noiseFlow.noiseFreq * scale, scrollY);
@@ -45,19 +45,6 @@ namespace colorTrails {
     }
 
     // --- Prepare: build noise profiles, apply modulator(s) ---
-
-    /*static void noiseFlowPrepare(float t) {
-        // Working copies of amplitude
-        float workXAmp = noiseFlow.xAmp;
-        float workYAmp = noiseFlow.yAmp;
-
-        sampleProfile2D(noise2X, t, noiseFlow.xSpeed, workXAmp,
-                        noiseFlow.xFreq, WIDTH,  xProf);
-        sampleProfile2D(noise2Y, t, noiseFlow.ySpeed, workYAmp,
-                        noiseFlow.yFreq, HEIGHT, yProf);
-    }*/
-
-
 
     static void noiseFlowPrepare(float t) {
         const ModConfig& ampMod = noiseFlow.modAmp;
@@ -109,15 +96,6 @@ namespace colorTrails {
         sampleProfile2D(noise2Y, t, noiseFlow.ySpeed, workYAmp,
                         noiseFlow.yFreq, HEIGHT, yProf);
     }
-
-
-
-
-
-
-
-
-
 
 
     // --- Advect: two-pass fractional advection (bilinear interpolation) + fade ---
