@@ -109,7 +109,8 @@ const char* const FLOWS[] PROGMEM = {
    
 // Flow field params
 const char* const NOISE_PARAMS[] PROGMEM = {
-   "xSpeed", "ySpeed", "xAmp", "yAmp","xFreq", "yFreq", "xShift", "yShift"
+   "xSpeed", "ySpeed", "xAmp", "yAmp","xFreq", "yFreq", "xShift", "yShift",
+   "modAmpRate", "modAmpLevel"
 };
 const char* const FROM_CENTER_PARAMS[] PROGMEM = {
    "radialStep", "blendFactor"
@@ -126,7 +127,7 @@ struct FlowParamEntry {
 };
 
 const FlowParamEntry FLOW_PARAM_LOOKUP[] PROGMEM = {
-   {"noise", NOISE_PARAMS, 8},
+   {"noise", NOISE_PARAMS, 10},
    {"fromcenter", FROM_CENTER_PARAMS, 2},
    {"directional", DIRECTIONAL_PARAMS, 6}
 };
@@ -223,6 +224,8 @@ float cXAmp = 1.0f;
 float cYAmp = 1.0f;
 float cXSpeed = -0.25f;
 float cYSpeed = -0.25f;
+float cModAmpRate = 1.0f;
+float cModAmpLevel = 1.0f;
 float cRadialStep = 0.18f;
 float cBlendFactor = 0.45f;
 float cWindStep = 0.95f;
@@ -379,6 +382,8 @@ void sendReceiptString(String receivedID, String receivedValue) {
    X(float, YSpeed, -0.25f) \
    X(float, XAmp, 1.0f) \
    X(float, YAmp, 1.0f) \
+   X(float, ModAmpRate, 1.0f) \
+   X(float, ModAmpLevel, 1.0f) \
    X(float, RadialStep, 0.18f) \
    X(float, BlendFactor, 0.45f) \
    X(float, WindStep, 0.95f) \

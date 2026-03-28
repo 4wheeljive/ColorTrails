@@ -10,6 +10,7 @@
 //  live in colorTrails_detail.hpp since they depend on bleControl.h.
 
 #include "colorTrailsTypes.h"
+#include "modulators.h"
 
 namespace colorTrails {
 

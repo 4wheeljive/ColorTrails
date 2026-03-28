@@ -103,6 +103,8 @@ namespace colorTrails {
                 cYFreq = noiseFlow.yFreq;
                 cXShift = noiseFlow.xShift;
                 cYShift = noiseFlow.yShift;
+                cModAmpRate = noiseFlow.modAmp.modRate;
+                cModAmpLevel = noiseFlow.modAmp.modLevel;
                 break;
             }
             case FLOW_FROMCENTER: {
@@ -136,6 +138,8 @@ namespace colorTrails {
         noiseFlow.yFreq = cYFreq;
         noiseFlow.xShift = cXShift;
         noiseFlow.yShift = cYShift;
+        noiseFlow.modAmp.modRate = cModAmpRate;
+        noiseFlow.modAmp.modLevel = cModAmpLevel;
         // From-center flow
         fromCenter.radialStep = cRadialStep;
         fromCenter.blendFactor = cBlendFactor;
