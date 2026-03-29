@@ -277,23 +277,32 @@ namespace colorTrails {
 
     struct NoiseKaleidoParams {
         float driftSpeed = 0.35f;   // noise field drift speed
+        float noiseScale = 0.0375f; // noise zoom level
+        float noiseBand = 0.2f;     // noise band width (pattern density)
+        float kaleidoGamma = 0.65f; // brightness profile exponent
     };
 
     NoiseKaleidoParams noiseKaleido;
 
-    // 6-octave fractal Brownian motion using our Perlin2D
-    static float fbm2d(float x, float y) {
+    // 4-octave fbm with early-exit for band rejection.
+    // Octaves 4-5 removed: below Nyquist at scale=0.0375 on a 48x32 grid.
+    // Uses ValueNoise2D (no grad dispatch) for speed.
+    static constexpr float FBM_NORM_INV = 1.0f / (1.0f + 0.5f + 0.25f + 0.125f); // 1/1.875
+    static constexpr float FBM_REMAINING[] = { 0.875f, 0.375f, 0.125f, 0.0f };
+
+    static float fbm2d(float x, float y, float bandLo, float bandHi) {
+        static constexpr float amps[] = { 1.0f, 0.5f, 0.25f, 0.125f };
         float total = 0.0f;
-        float amp = 1.0f;
         float freq = 1.0f;
-        float norm = 0.0f;
-        for (int i = 0; i < 6; i++) {
-            total += noise2X.noise(x * freq, y * freq) * amp;
-            norm += amp;
-            amp *= 0.5f;
+        for (int i = 0; i < 4; i++) {
+            total += kaleidoNoise.noise(x * freq, y * freq) * amps[i];
+            // Early exit: can remaining octaves bring total into band?
+            float rem = FBM_REMAINING[i];
+            if ((total + rem) * FBM_NORM_INV < bandLo) return -1.0f;
+            if ((total - rem) * FBM_NORM_INV > bandHi) return  1.0f;
             freq *= 2.0f;
         }
-        return total / norm;
+        return total * FBM_NORM_INV;
     }
 
     // Circular hue interpolation on [0, 1)
@@ -303,8 +312,10 @@ namespace colorTrails {
     }
 
     static void emitNoiseKaleido(float t) {
-        const float scale = 0.0375f;
+        const float scale = noiseKaleido.noiseScale;
         const float speed = noiseKaleido.driftSpeed;
+        const float band = noiseKaleido.noiseBand;
+        const float gamma = noiseKaleido.kaleidoGamma;
 
         const int baseX = (WIDTH / 2) + 1;
         const int baseY = (HEIGHT / 2) + 1;
@@ -328,16 +339,16 @@ namespace colorTrails {
                     float sx = clampf(gx + 0.37f, 0.0f, (float)(baseX - 1) - 1e-6f);
                     float sy = clampf(gy + 0.29f, 0.0f, (float)(baseY - 1) - 1e-6f);
 
-                    float n = fbm2d(sx * scale + L.offX, sy * scale + L.offY);
+                    float n = fbm2d(sx * scale + L.offX, sy * scale + L.offY, 0.0f, band);
 
-                    // Only draw in narrow noise band [0.0, 0.2] for sparse deposition
-                    if (n < 0.0f || n > 0.2f) continue;
+                    // Only draw in narrow noise band [0.0, band] for sparse deposition
+                    if (n < 0.0f || n > band) continue;
 
-                    float u = n / 0.2f;
+                    float u = n / band;
 
                     // Tent profile: peak at center of band, gamma-shaped
                     float tprof = 1.0f - fl::fabsf(u - 0.5f) * 2.0f;
-                    tprof = fl::powf(tprof, 0.65f);
+                    tprof = fastpow(tprof, gamma);
                     float gain = clampf(0.80f + 0.20f * tprof, 0.0f, 1.0f);
 
                     // Color from hue interpolation across noise range
@@ -348,10 +359,9 @@ namespace colorTrails {
                     float cb = c.b * gain;
 
                     // Bilinear deposition with kaleidoscopic mirroring
-                    int xi = (int)fl::floorf(sx);
-                    int yi = (int)fl::floorf(sy);
-                    float fx = sx - xi;
-                    float fy = sy - yi;
+                    // floor(sx) == gx since sx = gx + 0.37 (constant sub-pixel offset)
+                    float fx = sx - gx;
+                    float fy = sy - gy;
 
                     float weights[4] = {
                         (1.0f - fx) * (1.0f - fy),
@@ -359,8 +369,8 @@ namespace colorTrails {
                         (1.0f - fx) * fy,
                         fx * fy,
                     };
-                    int tapX[4] = { xi, xi + 1, xi, xi + 1 };
-                    int tapY[4] = { yi, yi, yi + 1, yi + 1 };
+                    int tapX[4] = { gx, gx + 1, gx, gx + 1 };
+                    int tapY[4] = { gy, gy + 1, gy, gy + 1 };
 
                     for (int tap = 0; tap < 4; tap++) {
                         if (weights[tap] <= 0.0f) continue;

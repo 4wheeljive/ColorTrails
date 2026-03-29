@@ -82,6 +82,7 @@ namespace colorTrails {
         noiseY.init(1337);
         noise2X.init(42);
         noise2Y.init(1337);
+        kaleidoNoise.init(7331);
         ampVarX.init(101);
         ampVarY.init(202);
 
@@ -203,6 +204,9 @@ namespace colorTrails {
         cLineAmp = lissajous.lineAmp;
         // Emitter: noiseKaleido
         cDriftSpeed = noiseKaleido.driftSpeed;
+        cNoiseScale = noiseKaleido.noiseScale;
+        cNoiseBand = noiseKaleido.noiseBand;
+        cKaleidoGamma = noiseKaleido.kaleidoGamma;
     }
 
     // Read cVars into component structs (called every frame)
@@ -226,6 +230,9 @@ namespace colorTrails {
         lissajous.lineSpeed = cLineSpeed;
         lissajous.lineAmp = cLineAmp;
         noiseKaleido.driftSpeed = cDriftSpeed;
+        noiseKaleido.noiseScale = cNoiseScale;
+        noiseKaleido.noiseBand = cNoiseBand;
+        noiseKaleido.kaleidoGamma = cKaleidoGamma;
         // Flow field + modulator
         syncFlowFromCVars();
     }

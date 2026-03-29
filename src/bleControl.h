@@ -74,7 +74,7 @@ const char* const LISSAJOUS_PARAMS[] PROGMEM = {
 };
 const char* const BORDERRECT_PARAMS[] PROGMEM = {};
 const char* const NOISEKALEIDO_PARAMS[] PROGMEM = {
-   "driftSpeed"
+   "driftSpeed", "noiseScale", "noiseBand", "kaleidoGamma"
 };
 
 // Struct to hold emitter name and parameter array reference
@@ -90,7 +90,7 @@ const EmitterParamEntry EMITTER_PARAM_LOOKUP[] PROGMEM = {
    {"audiodots", AUDIODOTS_PARAMS, 0},
    {"lissajous", LISSAJOUS_PARAMS, 2},
    {"borderrect", BORDERRECT_PARAMS, 0},
-   {"noisekaleido", NOISEKALEIDO_PARAMS, 1},
+   {"noisekaleido", NOISEKALEIDO_PARAMS, 4},
 };
 
 static const EmitterParamEntry* getEmitterParams(uint8_t emitterIdx) {
@@ -231,6 +231,9 @@ float cModSwarmSpreadRate = 1.0f;
 float cModSwarmSpreadLevel = 1.0f;
 float cLineSpeed = 0.35f;
 float cDriftSpeed = 0.35f;
+float cNoiseScale = 0.0375f;
+float cNoiseBand = 0.2f;
+float cKaleidoGamma = 0.65f;
 float cColorShift = 0.10f;
 float cLineAmp = 13.5f;
 float cXAmp = 1.0f;
@@ -397,6 +400,9 @@ void sendReceiptString(String receivedID, String receivedValue) {
    X(float, ModSwarmSpreadLevel, 1.0f) \
    X(float, LineSpeed, 0.35f) \
    X(float, DriftSpeed, 0.35f) \
+   X(float, NoiseScale, 0.0375f) \
+   X(float, NoiseBand, 0.2f) \
+   X(float, KaleidoGamma, 0.65f) \
    X(float, ColorShift, 0.10f) \
    X(float, LineAmp, 13.5f) \
    X(float, XFreq, 0.33f) \

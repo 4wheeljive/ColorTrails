@@ -899,6 +899,9 @@
             lineAmp:     {min: 1, max: 20, default: 13.5, step: 0.5},
 
             driftSpeed:  {min: 0.01, max: 5, default: 0.35, step: 0.01},
+            noiseScale:  {min: 0.01, max: 0.15, default: 0.0375, step: 0.005},
+            noiseBand:   {min: 0.05, max: 0.5, default: 0.2, step: 0.01},
+            kaleidoGamma:{min: 0.2, max: 3.0, default: 0.65, step: 0.05},
 
             // FLOW: noise
             xSpeed: {min: -5, max: 5, default: -0.5, step: 0.01},
@@ -946,7 +949,7 @@
             "audiodots":    [],
             "lissajous":    ["lineSpeed", "lineAmp"],
             "borderrect":   [],
-            "noisekaleido": ["driftSpeed"]
+            "noisekaleido": ["driftSpeed", "noiseScale", "noiseBand", "kaleidoGamma"]
         };
 
         const FLOW_PARAMS = {
