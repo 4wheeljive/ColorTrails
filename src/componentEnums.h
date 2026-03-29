@@ -7,6 +7,7 @@ enum Emitter : uint8_t {
     EMITTER_LISSAJOUS,
     EMITTER_BORDERRECT,
     EMITTER_AUDIODOTS,
+    EMITTER_NOISEKALEIDO,
     // future: EMITTER_TRIANGLE, ...
     EMITTER_COUNT
 };

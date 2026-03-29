@@ -42,6 +42,7 @@ namespace colorTrails {
         emitAudioDots,
         emitLissajousLine,
         emitRainbowBorder,
+        emitNoiseKaleido,
     };
 
     const FlowPrepFn FLOW_PREPARE[] = {
@@ -200,6 +201,8 @@ namespace colorTrails {
         // Emitter: lissajous / borderRect
         cLineSpeed = lissajous.lineSpeed;
         cLineAmp = lissajous.lineAmp;
+        // Emitter: noiseKaleido
+        cDriftSpeed = noiseKaleido.driftSpeed;
     }
 
     // Read cVars into component structs (called every frame)
@@ -222,6 +225,7 @@ namespace colorTrails {
         swarmingDots.dotDiam = cDotDiam;
         lissajous.lineSpeed = cLineSpeed;
         lissajous.lineAmp = cLineAmp;
+        noiseKaleido.driftSpeed = cDriftSpeed;
         // Flow field + modulator
         syncFlowFromCVars();
     }

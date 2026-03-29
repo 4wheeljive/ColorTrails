@@ -50,13 +50,14 @@ const char swarmingdots_str[] PROGMEM = "swarmingdots";
 const char audiodots_str[] PROGMEM = "audiodots";
 const char lissajous_str[] PROGMEM = "lissajous";
 const char borderrect_str[] PROGMEM = "borderrect";
+const char noisekaleido_str[] PROGMEM = "noisekaleido";
 
 
 const char* const EMITTERS[] PROGMEM = {
-      orbitaldots_str, swarmingdots_str, audiodots_str, lissajous_str, borderrect_str
+      orbitaldots_str, swarmingdots_str, audiodots_str, lissajous_str, borderrect_str, noisekaleido_str
    };
 
-const uint8_t EMITTER_COUNTS[] = {5};
+const uint8_t EMITTER_COUNTS[] = {6};
 
 // Emitter params
 const char* const ORBITALDOTS_PARAMS[] PROGMEM = {
@@ -72,7 +73,9 @@ const char* const LISSAJOUS_PARAMS[] PROGMEM = {
    "lineSpeed", "lineAmp"
 };
 const char* const BORDERRECT_PARAMS[] PROGMEM = {};
-
+const char* const NOISEKALEIDO_PARAMS[] PROGMEM = {
+   "driftSpeed"
+};
 
 // Struct to hold emitter name and parameter array reference
 struct EmitterParamEntry {
@@ -87,6 +90,7 @@ const EmitterParamEntry EMITTER_PARAM_LOOKUP[] PROGMEM = {
    {"audiodots", AUDIODOTS_PARAMS, 0},
    {"lissajous", LISSAJOUS_PARAMS, 2},
    {"borderrect", BORDERRECT_PARAMS, 0},
+   {"noisekaleido", NOISEKALEIDO_PARAMS, 1},
 };
 
 static const EmitterParamEntry* getEmitterParams(uint8_t emitterIdx) {
@@ -226,6 +230,7 @@ float cSwarmSpread = 1.0f;
 float cModSwarmSpreadRate = 1.0f;
 float cModSwarmSpreadLevel = 1.0f;
 float cLineSpeed = 0.35f;
+float cDriftSpeed = 0.35f;
 float cColorShift = 0.10f;
 float cLineAmp = 13.5f;
 float cXAmp = 1.0f;
@@ -391,6 +396,7 @@ void sendReceiptString(String receivedID, String receivedValue) {
    X(float, ModSwarmSpreadRate, 1.0f) \
    X(float, ModSwarmSpreadLevel, 1.0f) \
    X(float, LineSpeed, 0.35f) \
+   X(float, DriftSpeed, 0.35f) \
    X(float, ColorShift, 0.10f) \
    X(float, LineAmp, 13.5f) \
    X(float, XFreq, 0.33f) \
