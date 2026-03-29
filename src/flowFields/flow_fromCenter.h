@@ -95,9 +95,10 @@ namespace colorTrails {
                 }
 
                 // Blend current pixel with sampled pixel, then fade
-                gR[y][x] = fl::floorf((tR[y][x] * inv + sr * frac) * fade);
-                gG[y][x] = fl::floorf((tG[y][x] * inv + sg * frac) * fade);
-                gB[y][x] = fl::floorf((tB[y][x] * inv + sb * frac) * fade);
+                // Keep full float precision; quantize only at LED output.
+                gR[y][x] = (tR[y][x] * inv + sr * frac) * fade;
+                gG[y][x] = (tG[y][x] * inv + sg * frac) * fade;
+                gB[y][x] = (tB[y][x] * inv + sb * frac) * fade;
             }
         }
     }

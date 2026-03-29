@@ -167,11 +167,10 @@ namespace colorTrails {
                 int   iy1 = (iy0 + 1) % HEIGHT;
                 float f   = sy - fl::floorf(sy);
                 float inv = 1.0f - f;
-                // truncate to integer — Python's Pygame surface stores uint8,
-                // so int(value) kills sub-1.0 residuals every frame.
-                gR[y][x] = fl::floorf((tR[iy0][x] * inv + tR[iy1][x] * f) * fade);
-                gG[y][x] = fl::floorf((tG[iy0][x] * inv + tG[iy1][x] * f) * fade);
-                gB[y][x] = fl::floorf((tB[iy0][x] * inv + tB[iy1][x] * f) * fade);
+                // Keep full float precision; quantize only at LED output.
+                gR[y][x] = (tR[iy0][x] * inv + tR[iy1][x] * f) * fade;
+                gG[y][x] = (tG[iy0][x] * inv + tG[iy1][x] * f) * fade;
+                gB[y][x] = (tB[iy0][x] * inv + tB[iy1][x] * f) * fade;
             }
         }
     }

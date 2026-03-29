@@ -51,9 +51,10 @@ namespace colorTrails {
     struct ColorF { float r, g, b; };
 
     static inline uint8_t f2u8(float v) {
-        int i = (int)v;
-        if (i < 0)   return 0;
-        if (i > 255) return 255;
+        if (v <= 0.0f)   return 0;
+        if (v >= 255.0f) return 255;
+        // Round to nearest to reduce low-end bias vs truncation.
+        int i = (int)(v + 0.5f);
         return (uint8_t)i;
     }
 

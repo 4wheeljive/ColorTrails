@@ -186,9 +186,10 @@ namespace colorTrails {
                 const float bBot = tB[iy1][ix0] * (1.0f - fx) + tB[iy1][ix1] * fx;
                 const float sb   = bTop * (1.0f - fy) + bBot * fy;
 
-                gR[y][x] = fl::floorf(sr * fade);
-                gG[y][x] = fl::floorf(sg * fade);
-                gB[y][x] = fl::floorf(sb * fade);
+                // Keep full float precision; quantize only at LED output.
+                gR[y][x] = sr * fade;
+                gG[y][x] = sg * fade;
+                gB[y][x] = sb * fade;
             }
         }
     }
