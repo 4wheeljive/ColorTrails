@@ -15,8 +15,8 @@
 namespace colorTrails {
 
     struct NoiseFlowParams {
-        float xSpeed = -0.25f;   // Noise scroll speed  (column axis)
-        float ySpeed = -0.25f;   // Noise scroll speed  (row axis)
+        float xSpeed = 0.15f;   // Noise scroll speed  (column axis)
+        float ySpeed = 0.15f;   // Noise scroll speed  (row axis)
         float xAmp = 1.00f;   // Noise amplitude     (column axis)
         float yAmp = 1.00f;   // Noise amplitude     (row axis)
         float xFreq = 0.33f;   // Noise spatial scale (column axis) (aka "xScale")
@@ -28,9 +28,9 @@ namespace colorTrails {
 
         // Shared UI-facing modulation controls.
         // Each ModConfig uses modTimer for X and modTimer + 1 for Y.
-        ModConfig modAmp   = {0, 1.0f, 0.0f};
-        ModConfig modSpeed = {2, 1.0f, 0.0f};
-        ModConfig modShift = {4, 1.0f, 0.0f};
+        ModConfig modAmp   = {0, 1.0f, 1.0f}; // modTimer, modRate, modLevel  
+        ModConfig modSpeed = {2, 0.1f, 0.2f};
+        ModConfig modShift = {4, 0.5f, 1.1f};
     };
    
     NoiseFlowParams noiseFlow;

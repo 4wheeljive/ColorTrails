@@ -70,7 +70,7 @@ const char* const SWARMINGDOTS_PARAMS[] PROGMEM = {
 };
 const char* const AUDIODOTS_PARAMS[] PROGMEM = {};
 const char* const LISSAJOUS_PARAMS[] PROGMEM = {
-   "lineSpeed", "lineAmp"
+   "lineSpeed", "lineAmp", "modLineSpeedRate", "modLineSpeedLevel"
 };
 const char* const BORDERRECT_PARAMS[] PROGMEM = {};
 const char* const NOISEKALEIDO_PARAMS[] PROGMEM = {
@@ -88,7 +88,7 @@ const EmitterParamEntry EMITTER_PARAM_LOOKUP[] PROGMEM = {
    {"orbitaldots", ORBITALDOTS_PARAMS, 8},
    {"swarmingdots", SWARMINGDOTS_PARAMS, 6},
    {"audiodots", AUDIODOTS_PARAMS, 0},
-   {"lissajous", LISSAJOUS_PARAMS, 2},
+   {"lissajous", LISSAJOUS_PARAMS, 4},
    {"borderrect", BORDERRECT_PARAMS, 0},
    {"noisekaleido", NOISEKALEIDO_PARAMS, 4},
 };
@@ -230,6 +230,8 @@ float cSwarmSpread = 1.0f;
 float cModSwarmSpreadRate = 1.0f;
 float cModSwarmSpreadLevel = 1.0f;
 float cLineSpeed = 0.35f;
+float cModLineSpeedRate = 1.0f;
+float cModLineSpeedLevel = 0.0f;
 float cDriftSpeed = 0.35f;
 float cNoiseScale = 0.0375f;
 float cNoiseBand = 0.2f;
@@ -399,6 +401,8 @@ void sendReceiptString(String receivedID, String receivedValue) {
    X(float, ModSwarmSpreadRate, 1.0f) \
    X(float, ModSwarmSpreadLevel, 1.0f) \
    X(float, LineSpeed, 0.35f) \
+   X(float, ModLineSpeedRate, 1.0f) \
+   X(float, ModLineSpeedLevel, 0.0f) \
    X(float, DriftSpeed, 0.35f) \
    X(float, NoiseScale, 0.0375f) \
    X(float, NoiseBand, 0.2f) \

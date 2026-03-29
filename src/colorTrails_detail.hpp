@@ -202,6 +202,8 @@ namespace colorTrails {
         // Emitter: lissajous / borderRect
         cLineSpeed = lissajous.lineSpeed;
         cLineAmp = lissajous.lineAmp;
+        cModLineSpeedRate = lissajous.modLineSpeed.modRate;
+        cModLineSpeedLevel = lissajous.modLineSpeed.modLevel;
         // Emitter: noiseKaleido
         cDriftSpeed = noiseKaleido.driftSpeed;
         cNoiseScale = noiseKaleido.noiseScale;
@@ -229,6 +231,8 @@ namespace colorTrails {
         swarmingDots.dotDiam = cDotDiam;
         lissajous.lineSpeed = cLineSpeed;
         lissajous.lineAmp = cLineAmp;
+        lissajous.modLineSpeed.modRate = cModLineSpeedRate;
+        lissajous.modLineSpeed.modLevel = cModLineSpeedLevel;
         noiseKaleido.driftSpeed = cDriftSpeed;
         noiseKaleido.noiseScale = cNoiseScale;
         noiseKaleido.noiseBand = cNoiseBand;
