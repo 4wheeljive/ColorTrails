@@ -23,16 +23,16 @@ namespace colorTrails {
         float yAmp = 1.00f;   // Noise amplitude     (row axis)
         float xFreq = 0.33f;   // Noise spatial scale (column axis) (aka "xScale")
         float yFreq = 0.32f;   // Noise spatial scale (row axis) (aka "yScale")
-        float xShift = 1.8f;    // Max horizontal shift per row  (pixels)
-        float yShift = 1.8f;    // Max vertical shift per column (pixels)
-        float noiseFreq = 0.23f;  // effectively a multiplier of xFreq and yFreq
+        float xShift = 1.5f;    // Max horizontal shift per row  (pixels)
+        float yShift = 1.5f;    // Max vertical shift per column (pixels)
+        float noiseFreq = 0.2f;  // effectively a multiplier of xFreq and yFreq
         uint8_t numActiveTimers = 2;
 
         // Shared UI-facing modulation controls.
         // Each ModConfig uses modTimer for X and modTimer + 1 for Y.
-        ModConfig modAmp   = {0, 1.0f, 1.0f}; // modTimer, modRate, modLevel  
-        ModConfig modSpeed = {2, 0.1f, 0.2f};
-        ModConfig modShift = {4, 0.5f, 1.1f};
+        ModConfig modAmp   = {0, 0.5f, 0.5f}; // modTimer, modRate, modLevel  
+        ModConfig modSpeed = {2, 0.1f, 0.1f};
+        ModConfig modShift = {4, 0.5f, 0.5f};
     };
    
     NoiseFlowParams noiseFlow;

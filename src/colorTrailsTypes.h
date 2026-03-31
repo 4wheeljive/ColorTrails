@@ -417,7 +417,7 @@ namespace colorTrails {
 
     struct CtVizConfig {
         // Global params
-        float persistence = 0.02f;  // trail half-life in seconds
+        float persistence = 0.05f;  // trail half-life in seconds
         float colorShift = 0.20f;
         
         // Active component selections

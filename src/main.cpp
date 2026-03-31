@@ -19,10 +19,10 @@ bool debug = false;
 bool audioEnabled = false;
 bool audioLatencyDiagnostics = false;
 
-/*#include "profiler.h"
+#include "profiler.h"
 #ifdef PROFILING_ENABLED
 FrameProfiler profiler;
-#endif*/
+#endif
 
 #define BIG_BOARD
 //#undef BIG_BOARD
@@ -172,7 +172,7 @@ void setup() {
 
 void loop() {
 
-	//PROFILE_FRAME_BEGIN();
+	PROFILE_FRAME_BEGIN();
 
 	// Capture audio as early as possible each iteration to minimize
 	// the delay between DMA buffer availability and processing.
@@ -193,10 +193,10 @@ void loop() {
 		FASTLED_DBG(fps << " fps");
 	}
 	
-	/*EVERY_N_SECONDS(10) {
+	EVERY_N_SECONDS(10) {
 		PROFILE_REPORT();
 		PROFILE_RESET();
-	}*/
+	}
 
 	if (!displayOn){
 		FastLED.clear();
@@ -213,9 +213,9 @@ void loop() {
 		colorTrails::runColorTrails();
 	}
 
-	//PROFILE_START("led_show");
+	PROFILE_START("led_show");
 	FastLED.show();
-	//PROFILE_END();
+	PROFILE_END();
 	
 	// upon BLE disconnect
 	if (!deviceConnected && wasConnected) {
@@ -226,6 +226,6 @@ void loop() {
 		wasConnected = false;
 	}
 
-	//PROFILE_FRAME_END();
+	PROFILE_FRAME_END();
 
 } // loop()

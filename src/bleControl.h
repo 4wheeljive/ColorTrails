@@ -164,7 +164,7 @@ const uint8_t AUDIO_PARAM_COUNT = 15;
    
 // Parameter control *************************************************************************************
 
-uint8_t cBright = 75;
+uint8_t cBright = 35;
 uint8_t cMapping = 0;
 uint8_t cOverrideMapping = 0;
 
@@ -210,7 +210,7 @@ float cPeakBase = 1.0f;
 float cExpDecayFactor = 0.9f;
 
 //ColorTrails
-float cPersistence = 0.02f;
+float cPersistence = 0.05f;
 bool cUseRainbow = false;
 float cXFreq = 0.33f;
 float cYFreq = 0.32f;
@@ -219,14 +219,14 @@ float cModOrbitSpeedRate = 0.00005f;
 float cModOrbitSpeedLevel = 1.0f;
 float cModOrbitDiamRate = 0.0005f;
 float cModOrbitDiamLevel = 1.0f;
-float cXShift = 1.8f;
-float cYShift = 1.8f;
+float cXShift = 1.5f;
+float cYShift = 1.5f;
 float cOrbitDiam = 10.0f;
 float cColorSpeed = 0.10f;
 uint8_t cNumDots = 3;
 float cDotDiam = 1.5f;
 float cSwarmSpeed = 0.5f;
-float cSwarmSpread = 1.0f;
+float cSwarmSpread = 0.5f;
 float cModSwarmSpreadRate = 1.0f;
 float cModSwarmSpreadLevel = 1.0f;
 float cLineSpeed = 0.35f;
@@ -234,30 +234,30 @@ float cModLineSpeedRate = 1.0f;
 float cModLineSpeedLevel = 0.0f;
 float cDriftSpeed = 0.35f;
 float cNoiseScale = 0.0375f;
-float cNoiseBand = 0.2f;
+float cNoiseBand = 0.1f;
 float cKaleidoGamma = 0.65f;
 float cColorShift = 0.10f;
 float cLineAmp = 13.5f;
 float cXAmp = 1.0f;
 float cYAmp = 1.0f;
-float cXSpeed = -0.25f;
-float cYSpeed = -0.25f;
-float cModAmpRate = 1.0f;
-float cModAmpLevel = 1.0f;
-float cModSpeedRate = 1.0f;
-float cModSpeedLevel = 0.0f;
-float cModShiftRate = 1.0f;
-float cModShiftLevel = 0.0f;
-float cRadialStep = 0.18f;
+float cXSpeed = 0.15f;
+float cYSpeed = 0.15f;
+float cModAmpRate = 0.5f;
+float cModAmpLevel = 0.5f;
+float cModSpeedRate = 0.1f;
+float cModSpeedLevel = 0.1f;
+float cModShiftRate = 0.5f;
+float cModShiftLevel = 0.5f;
+float cRadialStep = 0.15f;
 float cBlendFactor = 0.45f;
 float cWindStep = 0.95f;
 float cRotateSpeed = 0.25f;
 float cWaveAmp = 0.0f;
 float cWaveFreq = 0.20f;
 float cWaveSpeed = 1.20f;
-float cInnerSwirl = -0.26f;
-float cOuterSwirl = 0.24f;
-float cMidDrift = 0.42f;
+float cInnerSwirl = -0.2f;
+float cOuterSwirl = 0.2f;
+float cMidDrift = 0.3f;
 float cModBreatheRate = 1.0f;
 float cModBreatheLevel = 1.0f;
 
@@ -405,7 +405,7 @@ void sendReceiptString(String receivedID, String receivedValue) {
    X(float, ModLineSpeedLevel, 0.0f) \
    X(float, DriftSpeed, 0.35f) \
    X(float, NoiseScale, 0.0375f) \
-   X(float, NoiseBand, 0.2f) \
+   X(float, NoiseBand, 0.1f) \
    X(float, KaleidoGamma, 0.65f) \
    X(float, ColorShift, 0.10f) \
    X(float, LineAmp, 13.5f) \

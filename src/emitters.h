@@ -317,7 +317,7 @@ namespace colorTrails {
     struct NoiseKaleidoParams {
         float driftSpeed = 0.35f;   // noise field drift speed
         float noiseScale = 0.0375f; // noise zoom level
-        float noiseBand = 0.2f;     // noise band width (pattern density)
+        float noiseBand = 0.1f;     // noise band width (pattern density)
         float kaleidoGamma = 0.65f; // brightness profile exponent
     };
 

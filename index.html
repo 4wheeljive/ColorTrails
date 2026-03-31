@@ -207,7 +207,7 @@
                     min="5" 
                     max="150" 
                     step="5" 
-                    default-value="75"
+                    default-value="35"
                     data-used="true">
                 </control-slider>
                 <control-dropdown 
@@ -876,7 +876,7 @@
 
         const PARAMETER_REGISTRY = {
             // GLOBAL
-            persistence: {min: 0.02, max: 30, default: .02, step: 0.01},
+            persistence: {min: 0.02, max: 30, default: .05, step: 0.01},
             colorShift:  {min: 0.01, max: 1, default: 0.10, step: 0.01},
 
             // EMITTERS
@@ -902,27 +902,27 @@
 
             driftSpeed:  {min: 0.01, max: 5, default: 0.35, step: 0.01},
             noiseScale:  {min: 0.01, max: 0.15, default: 0.0375, step: 0.005},
-            noiseBand:   {min: 0.05, max: 0.5, default: 0.2, step: 0.01},
+            noiseBand:   {min: 0.05, max: 0.5, default: 0.1, step: 0.01},
             kaleidoGamma:{min: 0.2, max: 3.0, default: 0.65, step: 0.05},
 
             // FLOW: noise
-            xSpeed: {min: -5, max: 5, default: -0.5, step: 0.01},
-            ySpeed: {min: -5, max: 5, default: -0.5, step: 0.01},
-            xAmp:   {min: 0.1, max: 3, default: 1.0, step: 0.01},
-            yAmp:   {min: 0.1, max: 3, default: 1.0, step: 0.01},
-            xFreq:  {min: 0.05, max: 10.00, default: 0.33, step: 0.01},
-            yFreq:  {min: 0.05, max: 10.00, default: 0.32, step: 0.01},
-            xShift: {min: 0.1, max: 5, default: 1.8, step: 0.1},
-            yShift: {min: 0.1, max: 5, default: 1.8, step: 0.1},
-            modAmpRate:  {min: 0.1, max: 3.0, default: 1.0, step: 0.1},
-            modAmpLevel: {min: 0, max: 2.0, default: 1.0, step: 0.1},
-            modSpeedRate:  {min: 0.1, max: 3.0, default: 1.0, step: 0.1},
-            modSpeedLevel: {min: 0, max: 2.0, default: 0.0, step: 0.1},
-            modShiftRate:  {min: 0.1, max: 3.0, default: 1.0, step: 0.1},
-            modShiftLevel: {min: 0, max: 2.0, default: 0.0, step: 0.1},
+            xSpeed: {min: -5, max: 5, default: 0.15, step: 0.01},
+            ySpeed: {min: -5, max: 5, default: 0.15, step: 0.01},
+            xAmp:   {min: 0.1, max: 3, default: 1.0, step: 0.1},
+            yAmp:   {min: 0.1, max: 3, default: 1.0, step: 0.1},
+            xFreq:  {min: 0.01, max: 10.00, default: 0.33, step: 0.01},
+            yFreq:  {min: 0.01, max: 10.00, default: 0.32, step: 0.01},
+            xShift: {min: 0.1, max: 5, default: 1.5, step: 0.1},
+            yShift: {min: 0.1, max: 5, default: 1.5, step: 0.1},
+            modAmpRate:  {min: 0.1, max: 3.0, default: 0.5, step: 0.1},
+            modAmpLevel: {min: 0, max: 2.0, default: 0.5, step: 0.1},
+            modSpeedRate:  {min: 0.1, max: 3.0, default: 0.1, step: 0.1},
+            modSpeedLevel: {min: 0, max: 2.0, default: 0.1, step: 0.1},
+            modShiftRate:  {min: 0.1, max: 3.0, default: 0.5, step: 0.1},
+            modShiftLevel: {min: 0, max: 2.0, default: 0.5, step: 0.1},
             
             // FLOW: fromcenter
-            radialStep:  {min: 0.01, max: 2, default: 0.18, step: 0.01},
+            radialStep:  {min: 0.01, max: 2, default: 0.15, step: 0.01},
             blendFactor: {min: 0, max: 1, default: 0.45, step: 0.01},
 
             // FLOW: directional
@@ -933,9 +933,9 @@
             waveSpeed:   {min: 0, max: 5, default: 1.20, step: 0.1},
 
             // FLOW: rings
-            innerSwirl:      {min: -1, max: 1, default: -0.26, step: 0.01},
-            outerSwirl:      {min: -1, max: 1, default: 0.24, step: 0.01},
-            midDrift:        {min: 0, max: 2, default: 0.42, step: 0.01},
+            innerSwirl:      {min: -1, max: 1, default: -0.2, step: 0.01},
+            outerSwirl:      {min: -1, max: 1, default: 0.2, step: 0.01},
+            midDrift:        {min: 0, max: 2, default: 0.3, step: 0.01},
             modBreatheRate:  {min: 0.1, max: 3.0, default: 1.0, step: 0.1},
             modBreatheLevel: {min: 0, max: 2.0, default: 1.0, step: 0.1},
         };
