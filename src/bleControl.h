@@ -9,18 +9,15 @@ C:\Users\...\.platformio\packages\framework-arduinoespressif32\libraries\BLE\src
 Setting numHandles = 60 has worked for 7 characteristics.  
 */
 
-#include <BLEDevice.h>
-#include <BLEServer.h>
-#include <BLEUtils.h>
-#include <BLE2902.h>
+#include <NimBLEDevice.h>
 
 #include <string>
 
 #include "componentEnums.h"
 
-#include <FS.h>
-#include "LittleFS.h"
-#define FORMAT_LITTLEFS_IF_FAILED true 
+//#include <FS.h>
+//#include "LittleFS.h"
+//#define FORMAT_LITTLEFS_IF_FAILED true 
 
 bool displayOn = true;
 
@@ -267,11 +264,12 @@ ArduinoJson::JsonDocument receivedJSON;
 //*******************************************************************************
 //BLE CONFIGURATION *************************************************************
 
-BLEServer* pServer = NULL;
-BLECharacteristic* pButtonCharacteristic = NULL;
-BLECharacteristic* pCheckboxCharacteristic = NULL;
-BLECharacteristic* pNumberCharacteristic = NULL;
-BLECharacteristic* pStringCharacteristic = NULL;
+NimBLEServer* pServer = NULL;
+NimBLECharacteristic* pButtonCharacteristic = NULL;
+NimBLECharacteristic* pCheckboxCharacteristic = NULL;
+NimBLECharacteristic* pNumberCharacteristic = NULL;
+NimBLECharacteristic* pStringCharacteristic = NULL;
+NimBLEAdvertising* pAdvertising = NULL;
 
 bool deviceConnected = false;
 bool wasConnected = false;
@@ -282,10 +280,6 @@ bool wasConnected = false;
 #define NUMBER_CHARACTERISTIC_UUID     "19b10003-e8f2-537e-4f6c-d104768a1214"
 #define STRING_CHARACTERISTIC_UUID     "19b10004-e8f2-537e-4f6c-d104768a1214"
 
-BLEDescriptor pButtonDescriptor(BLEUUID((uint16_t)0x2902));
-BLEDescriptor pCheckboxDescriptor(BLEUUID((uint16_t)0x2902));
-BLEDescriptor pNumberDescriptor(BLEUUID((uint16_t)0x2902));
-BLEDescriptor pStringDescriptor(BLEUUID((uint16_t)0x2902));
 
 //*******************************************************************************
 // CONTROL FUNCTIONS ************************************************************
@@ -906,23 +900,23 @@ void processString(String receivedID, String receivedValue ) {
 //*******************************************************************************
 // CALLBACKS ********************************************************************
 
-   class MyServerCallbacks: public BLEServerCallbacks {
-   void onConnect(BLEServer* pServer) {
+   class MyServerCallbacks: public NimBLEServerCallbacks {
+   void onConnect(NimBLEServer* pServer, NimBLEConnInfo& connInfo) override {
       deviceConnected = true;
       wasConnected = true;
       if (debug) {Serial.println("Device Connected");}
    };
 
-   void onDisconnect(BLEServer* pServer) {
+   void onDisconnect(NimBLEServer* pServer, NimBLEConnInfo& connInfo, int reason) override {
       deviceConnected = false;
       wasConnected = true;
    }
    };
 
-   class ButtonCharacteristicCallbacks : public BLECharacteristicCallbacks {
-      void onWrite(BLECharacteristic *characteristic) {
+   class ButtonCharacteristicCallbacks : public NimBLECharacteristicCallbacks {
+      void onWrite(NimBLECharacteristic *pCharacteristic, NimBLEConnInfo& connInfo) override {
 
-         String value = characteristic->getValue();
+         String value = String(pCharacteristic->getValue().c_str());
          if (value.length() > 0) {
             
             uint8_t receivedValue = value[0];
@@ -938,10 +932,10 @@ void processString(String receivedID, String receivedValue ) {
       }
    };
 
-   class CheckboxCharacteristicCallbacks : public BLECharacteristicCallbacks {
-      void onWrite(BLECharacteristic *characteristic) {
-   
-         String receivedBuffer = characteristic->getValue();
+   class CheckboxCharacteristicCallbacks : public NimBLECharacteristicCallbacks {
+      void onWrite(NimBLECharacteristic *pCharacteristic, NimBLEConnInfo& connInfo) override {
+
+         String receivedBuffer = String(pCharacteristic->getValue().c_str());
    
          if (receivedBuffer.length() > 0) {
                      
@@ -966,10 +960,10 @@ void processString(String receivedID, String receivedValue ) {
       }
    };
 
-   class NumberCharacteristicCallbacks : public BLECharacteristicCallbacks {
-      void onWrite(BLECharacteristic *characteristic) {
-         
-         String receivedBuffer = characteristic->getValue();
+   class NumberCharacteristicCallbacks : public NimBLECharacteristicCallbacks {
+      void onWrite(NimBLECharacteristic *pCharacteristic, NimBLEConnInfo& connInfo) override {
+
+         String receivedBuffer = String(pCharacteristic->getValue().c_str());
          
          if (receivedBuffer.length() > 0) {
          
@@ -997,10 +991,10 @@ void processString(String receivedID, String receivedValue ) {
       }
    };
 
-   class StringCharacteristicCallbacks : public BLECharacteristicCallbacks {
-      void onWrite(BLECharacteristic *characteristic) {
-         
-         String receivedBuffer = characteristic->getValue();
+   class StringCharacteristicCallbacks : public NimBLECharacteristicCallbacks {
+      void onWrite(NimBLECharacteristic *pCharacteristic, NimBLEConnInfo& connInfo) override {
+
+         String receivedBuffer = String(pCharacteristic->getValue().c_str());
          
          if (receivedBuffer.length() > 0) {
          
@@ -1028,63 +1022,67 @@ void processString(String receivedID, String receivedValue ) {
 //*******************************************************************************
 // BLE SETUP FUNCTION ***********************************************************
 
-uint8_t dummy = 1;
-
 void bleSetup() {
 
-      BLEDevice::init("Flow Fields");
-      BLEDevice::setMTU(517);  // Request max MTU for larger JSON payloads
+      NimBLEDevice::init("Flow Fields");
+      NimBLEDevice::setMTU(517);  // Request max MTU for larger JSON payloads
 
-      pServer = BLEDevice::createServer();
+      pServer = NimBLEDevice::createServer();
       pServer->setCallbacks(new MyServerCallbacks());
 
-      BLEService *pService = pServer->createService(SERVICE_UUID);
+      NimBLEService *pService = pServer->createService(SERVICE_UUID);
 
       pButtonCharacteristic = pService->createCharacteristic(
                         BUTTON_CHARACTERISTIC_UUID,
-                        BLECharacteristic::PROPERTY_WRITE |
-                        BLECharacteristic::PROPERTY_READ |
-                        BLECharacteristic::PROPERTY_NOTIFY
+                        NIMBLE_PROPERTY::WRITE |
+                        NIMBLE_PROPERTY::READ |
+                        NIMBLE_PROPERTY::NOTIFY
                      );
       pButtonCharacteristic->setCallbacks(new ButtonCharacteristicCallbacks());
-      pButtonCharacteristic->setValue(String(dummy).c_str());
-
+      
       pCheckboxCharacteristic = pService->createCharacteristic(
                         CHECKBOX_CHARACTERISTIC_UUID,
-                        BLECharacteristic::PROPERTY_WRITE |
-                        BLECharacteristic::PROPERTY_READ |
-                        BLECharacteristic::PROPERTY_NOTIFY
+                        NIMBLE_PROPERTY::WRITE |
+                        NIMBLE_PROPERTY::READ |
+                        NIMBLE_PROPERTY::NOTIFY
                      );
       pCheckboxCharacteristic->setCallbacks(new CheckboxCharacteristicCallbacks());
-      pCheckboxCharacteristic->setValue(String(dummy).c_str());
       
       pNumberCharacteristic = pService->createCharacteristic(
                         NUMBER_CHARACTERISTIC_UUID,
-                        BLECharacteristic::PROPERTY_WRITE |
-                        BLECharacteristic::PROPERTY_READ |
-                        BLECharacteristic::PROPERTY_NOTIFY
+                        NIMBLE_PROPERTY::WRITE |
+                        NIMBLE_PROPERTY::READ |
+                        NIMBLE_PROPERTY::NOTIFY
                      );
       pNumberCharacteristic->setCallbacks(new NumberCharacteristicCallbacks());
-      pNumberCharacteristic->setValue(String(dummy).c_str());
-
+      
       pStringCharacteristic = pService->createCharacteristic(
                         STRING_CHARACTERISTIC_UUID,
-                        BLECharacteristic::PROPERTY_WRITE |
-                        BLECharacteristic::PROPERTY_READ |
-                        BLECharacteristic::PROPERTY_NOTIFY
+                        NIMBLE_PROPERTY::WRITE |
+                        NIMBLE_PROPERTY::READ |
+                        NIMBLE_PROPERTY::NOTIFY
                      );
       pStringCharacteristic->setCallbacks(new StringCharacteristicCallbacks());
-      pStringCharacteristic->setValue(String(dummy).c_str());
       
 
       //**********************************************************
 
-      pService->start();
+      //pService->start();
 
-      BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
+      pAdvertising = NimBLEDevice::getAdvertising();
       pAdvertising->addServiceUUID(SERVICE_UUID);
-      pAdvertising->setScanResponse(true);  // Enable scan response for longer name
-      pAdvertising->setMinPreferred(0x0);  // set value to 0x00 to not advertise this parameter
-      BLEDevice::startAdvertising();
+
+      // Set up advertisement data with device name for Web Bluetooth compatibility
+      NimBLEAdvertisementData advertisementData;
+      advertisementData.setName("Flow Fields");
+      advertisementData.setCompleteServices(NimBLEUUID(SERVICE_UUID));
+      pAdvertising->setAdvertisementData(advertisementData);
+
+      // Set up scan response data
+      NimBLEAdvertisementData scanResponseData;
+      scanResponseData.setName("Flow Fields");
+      pAdvertising->setScanResponseData(scanResponseData);
+
+      pAdvertising->start();
       if (debug) {Serial.println("Waiting a client connection to notify...");}
 }

@@ -11,18 +11,20 @@ CREDITS:
 //#define FASTLED_OVERCLOCK 1.2
 #include <FastLED.h>
 
-#include <FS.h>
-#include "LittleFS.h"
-#define FORMAT_LITTLEFS_IF_FAILED true 
+//#include <FS.h>
+//#include "LittleFS.h"
+//#define FORMAT_LITTLEFS_IF_FAILED true 
 
 bool debug = false;
 bool audioEnabled = false;
 bool audioLatencyDiagnostics = false;
 
+/*
 #include "profiler.h"
 #ifdef PROFILING_ENABLED
-FrameProfiler profiler;
+	FrameProfiler profiler;
 #endif
+*/
 
 #define BIG_BOARD
 //#undef BIG_BOARD
@@ -155,11 +157,13 @@ void setup() {
 
 	bleSetup();
 
+	/*
 	if (!LittleFS.begin(true)) {
 		Serial.println("LittleFS mount failed!");
 		return;
 	}
 	Serial.println("LittleFS mounted successfully.");
+	*/
 
 	if (audioEnabled){
 		myAudio::initAudioInput();
@@ -172,7 +176,7 @@ void setup() {
 
 void loop() {
 
-	PROFILE_FRAME_BEGIN();
+	//PROFILE_FRAME_BEGIN();
 
 	// Capture audio as early as possible each iteration to minimize
 	// the delay between DMA buffer availability and processing.
@@ -193,10 +197,12 @@ void loop() {
 		FASTLED_DBG(fps << " fps");
 	}
 	
+	/*
 	EVERY_N_SECONDS(10) {
 		PROFILE_REPORT();
 		PROFILE_RESET();
 	}
+	*/
 
 	if (!displayOn){
 		FastLED.clear();
@@ -213,19 +219,18 @@ void loop() {
 		colorTrails::runColorTrails();
 	}
 
-	PROFILE_START("led_show");
+	//PROFILE_START("led_show");
 	FastLED.show();
-	PROFILE_END();
+	//PROFILE_END();
 	
-	// upon BLE disconnect
 	if (!deviceConnected && wasConnected) {
 		if (debug) {Serial.println("Device disconnected.");}
 		delay(500); // give the bluetooth stack the chance to get things ready
-		pServer->startAdvertising();
+		pAdvertising->start();
 		if (debug) {Serial.println("Start advertising");}
 		wasConnected = false;
 	}
 
-	PROFILE_FRAME_END();
+	//PROFILE_FRAME_END();
 
 } // loop()
