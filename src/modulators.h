@@ -4,9 +4,9 @@
 //  MODULATORS — modulators.h
 // ═══════════════════════════════════════════════════════════════════
 
-#include "colorTrailsTypes.h"
+#include "flowFieldsTypes.h"
 
-namespace colorTrails {
+namespace flowFields {
 
     // ═══════════════════════════════════════════════════════════════════
     //  TIMER / MODULATOR ENGINE
@@ -74,4 +74,4 @@ namespace colorTrails {
         }
     }
     
-} // namespace colorTrails
+} // namespace flowFields

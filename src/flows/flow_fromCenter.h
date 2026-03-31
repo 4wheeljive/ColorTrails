@@ -9,9 +9,9 @@
 //
 //  Ported from Python apply_from_center_tail() in _5.py (mode 15).
 
-#include "colorTrailsTypes.h"
+#include "flowFieldsTypes.h"
 
-namespace colorTrails {
+namespace flowFields {
     FL_FAST_MATH_BEGIN
     FL_OPTIMIZATION_LEVEL_O3_BEGIN
 
@@ -108,4 +108,4 @@ namespace colorTrails {
     FL_OPTIMIZATION_LEVEL_O3_END
     FL_FAST_MATH_END
 
-} // namespace colorTrails
+} // namespace flowFields

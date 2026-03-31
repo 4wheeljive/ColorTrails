@@ -1,7 +1,7 @@
 //================================================================================================================
 /*
 CREDITS:
- - colortrails based on visualizer by Stefan Petrick first introduced here:
+ - flowFields based on visualizer by Stefan Petrick first introduced here:
 			https://www.reddit.com/r/FastLED/comments/1rny5j3/i_used_codex_for_the_first_time/
 */
 //===============================================================================================================
@@ -35,12 +35,25 @@ bool audioLatencyDiagnostics = false;
 
 #ifdef BIG_BOARD 
 	
+	/*
 	#include "reference/matrixMap_32x48_3pin.h" 
 	#define PIN1 3
     #define PIN2 4
     #define HEIGHT 32 
     #define WIDTH 48
     #define NUM_STRIPS 3
+    #define NUM_LEDS_PER_STRIP 512
+	*/
+
+	#include "reference/matrixMap_48x64_6pin.h" 
+	#define PIN1 3
+    #define PIN2 4
+	#define PIN3 50
+	#define PIN4 49
+	#define PIN5 5
+    #define HEIGHT 48 
+    #define WIDTH 64
+    #define NUM_STRIPS 6
     #define NUM_LEDS_PER_STRIP 512
 			
 #else 
@@ -75,7 +88,7 @@ bool mappingOverride = false;
 #include "audio/audioInput.h"
 #include "audio/audioProcessing.h"
 #include "bleControl.h"
-#include "colorTrails.hpp"
+#include "flowFields.hpp"
 
 using namespace fl;
 
@@ -116,7 +129,7 @@ void setup() {
 	Serial.setTxTimeoutMs(1);  // 1ms timeout — avoids unsigned underflow
 	delay(1000);
 
-	FastLED.setExclusiveDriver("RMT");
+	FastLED.setExclusiveDriver("PARLIO");
 
 	FastLED.addLeds<WS2812B, PIN0, GRB>(leds, 0, NUM_LEDS_PER_STRIP)
 		.setCorrection(TypicalLEDStrip);
@@ -213,10 +226,10 @@ void loop() {
 		mappingOverride ? cMapping = cOverrideMapping : cMapping = defaultMapping;
 		defaultMapping = Mapping::TopDownProgressive;
 
-		if (!colorTrails::colorTrailsInstance) {
-			colorTrails::initColorTrails(myXY);
+		if (!flowFields::flowFieldsInstance) {
+			flowFields::initFlowFields(myXY);
 		}
-		colorTrails::runColorTrails();
+		flowFields::runFlowFields();
 	}
 
 	//PROFILE_START("led_show");

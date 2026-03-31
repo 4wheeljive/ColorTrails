@@ -4,10 +4,10 @@
 //  EMITTERS — emitters.h
 // ═══════════════════════════════════════════════════════════════════
 
-#include "colorTrailsTypes.h"
+#include "flowFieldsTypes.h"
 #include "modulators.h"
 
-namespace colorTrails {
+namespace flowFields {
     FL_FAST_MATH_BEGIN
     FL_OPTIMIZATION_LEVEL_O3_BEGIN
 
@@ -476,4 +476,4 @@ namespace colorTrails {
     FL_OPTIMIZATION_LEVEL_O3_END
     FL_FAST_MATH_END
 
-} // namespace colorTrails
+} // namespace flowFields

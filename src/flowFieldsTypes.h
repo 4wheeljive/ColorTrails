@@ -1,7 +1,7 @@
 #pragma once
 
 // ═══════════════════════════════════════════════════════════════════
-//  colorTrailsTypes.h — Anchor header for the colorTrails system.
+//  flowFieldsTypes.h — Anchor header for the flowFields system.
 //  All shared types, constants, global instances, noise generators,
 //  math helpers, and drawing primitives live here.
 //  Sub-headers (flow_noise.h, future emitter headers) include this.
@@ -10,7 +10,7 @@
 #include <FastLED.h>
 #include "componentEnums.h"
 
-namespace colorTrails {
+namespace flowFields {
 
     constexpr float CT_PI = 3.14159265358979f;
     constexpr float CT_2PI = 6.28318530717958f;
@@ -19,7 +19,7 @@ namespace colorTrails {
     //  GRID STATE & TIMING
     // ═══════════════════════════════════════════════════════════════════
 
-    bool colorTrailsInstance = false;
+    bool flowFieldsInstance = false;
     uint16_t (*xyFunc)(uint8_t x, uint8_t y);
 
     // Floating-point RGB grid, row-major [y][x].
@@ -430,4 +430,4 @@ namespace colorTrails {
     FL_OPTIMIZATION_LEVEL_O3_END
     FL_FAST_MATH_END
 
-} // namespace colorTrails
+} // namespace flowFields

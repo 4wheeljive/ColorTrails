@@ -11,9 +11,9 @@
 //  rotateSpeed > 0  -> wind vector rotates over time
 //  waveAmp     > 0  -> adds sinusoidal wobble perpendicular to wind
 
-#include "colorTrailsTypes.h"
+#include "flowFieldsTypes.h"
 
-namespace colorTrails {
+namespace flowFields {
     FL_FAST_MATH_BEGIN
     FL_OPTIMIZATION_LEVEL_O3_BEGIN
 
@@ -119,4 +119,4 @@ namespace colorTrails {
     FL_OPTIMIZATION_LEVEL_O3_END
     FL_FAST_MATH_END
 
-} // namespace colorTrails
+} // namespace flowFields

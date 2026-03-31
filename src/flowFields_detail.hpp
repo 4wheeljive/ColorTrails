@@ -22,15 +22,15 @@
 //=====================================================================================
 
 #include "bleControl.h"
-#include "colorTrailsTypes.h"
-#include "flowFields/flow_noise.h"
-#include "flowFields/flow_fromCenter.h"
-#include "flowFields/flow_directional.h"
-#include "flowFields/flow_rings.h"
+#include "flowFieldsTypes.h"
+#include "flows/flow_noise.h"
+#include "flows/flow_fromCenter.h"
+#include "flows/flow_directional.h"
+#include "flows/flow_rings.h"
 #include "emitters.h"
 #include "modulators.h"
 
-namespace colorTrails {
+namespace flowFields {
 
     // ═══════════════════════════════════════════════════════════════════
     //  DISPATCH TABLES
@@ -65,8 +65,8 @@ namespace colorTrails {
     //  INIT & MAIN LOOP
     // ═══════════════════════════════════════════════════════════════════
 
-    void initColorTrails(uint16_t (*xy_func)(uint8_t, uint8_t)) {
-        colorTrailsInstance = true;
+    void initFlowFields(uint16_t (*xy_func)(uint8_t, uint8_t)) {
+        flowFieldsInstance = true;
         xyFunc = xy_func;
 
         for (int y = 0; y < HEIGHT; y++)
@@ -239,7 +239,7 @@ namespace colorTrails {
         syncFlowFromCVars();
     }
 
-    void runColorTrails() {
+    void runFlowFields() {
         unsigned long now = fl::millis();
         float dt = (now - lastFrameMs) * 0.001f;
         lastFrameMs = now;
@@ -284,4 +284,4 @@ namespace colorTrails {
         }
     }
 
-} // namespace colorTrails
+} // namespace flowFields

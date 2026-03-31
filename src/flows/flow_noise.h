@@ -5,14 +5,14 @@
 // ═══════════════════════════════════════════════════════════════════
 //
 //  Self-contained noise flow field implementation.
-//  Includes colorTrailsTypes.h for shared types and instances.
+//  Includes flowFieldsTypes.h for shared types and instances.
 //  cVar bridge helpers (pushFlowDefaultsToCVars / syncFlowFromCVars)
-//  live in colorTrails_detail.hpp since they depend on bleControl.h.
+//  live in flowFields_detail.hpp since they depend on bleControl.h.
 
-#include "colorTrailsTypes.h"
+#include "flowFieldsTypes.h"
 #include "modulators.h"
 
-namespace colorTrails {
+namespace flowFields {
     FL_FAST_MATH_BEGIN
     FL_OPTIMIZATION_LEVEL_O3_BEGIN
 
@@ -180,4 +180,4 @@ namespace colorTrails {
     FL_OPTIMIZATION_LEVEL_O3_END
     FL_FAST_MATH_END
 
-} // namespace colorTrails
+} // namespace flowFields
