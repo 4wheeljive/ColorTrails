@@ -347,28 +347,28 @@
                     data-my-number="10"
                     data-visualizers="waves"
                     checked>
-                </control-checkbox>
+                </control-checkbox> -->
 
                 <control-checkbox 
                     label="AngleFreezeX" 
                     data-my-number="21"
-                    data-visualizers="cube"
+                    data-emitters="cube"
                     unchecked>
                 </control-checkbox>
                 <control-checkbox 
                     label="AngleFreezeY" 
                     data-my-number="22"
-                    data-visualizers="cube"
+                    data-emitters="cube"
                     unchecked>
                 </control-checkbox>
                 <control-checkbox 
                     label="AngleFreezeZ" 
                     data-my-number="23"
-                    data-visualizers="cube"
+                    data-emitters="cube"
                     unchecked>
                 </control-checkbox>
                 
-                <div class = "control-group">
+                <!--<div class = "control-group">
                     <control-checkbox 
                         label="Manual Scene Mode" 
                         data-my-number="12"
@@ -677,7 +677,8 @@
                         component.updateConnectionState();
                     }
                 });
-                // (dynamic controls visibility removed — all controls always visible)
+                // Update dynamic controls visibility
+                updateDynamicControls();
             }
         };
 
@@ -868,7 +869,7 @@
         // ******************************************************************************************************
         // EMITTER / FLOW NAMES (parallel to ESP32 enums) *******************************************************
 
-        const EMITTER_NAMES = ["ORBITALDOTS", "SWARMINGDOTS", "AUDIODOTS", "LISSAJOUS", "BORDERRECT", "NOISEKALEIDO"];
+        const EMITTER_NAMES = ["ORBITALDOTS", "SWARMINGDOTS", "AUDIODOTS", "LISSAJOUS", "BORDERRECT", "NOISEKALEIDO", "CUBE"];
         const FLOW_NAMES    = ["NOISE", "FROMCENTER", "DIRECTIONAL", "RINGS"];
 
         // ******************************************************************************************************
@@ -901,6 +902,10 @@
             lineAmp:     {min: 1, max: 20, default: 13.5, step: 0.5},
 
             driftSpeed:  {min: 0.01, max: 5, default: 0.35, step: 0.01},
+            scale:       {min: 0.5, max: 3.0, default: 1.0, step: 0.1},
+            angleRateX:  {min: -0.5, max: 0.5, default: 0.02, step: 0.001},
+            angleRateY:  {min: -0.5, max: 0.5, default: 0.03, step: 0.001},
+            angleRateZ:  {min: -0.5, max: 0.5, default: 0.01, step: 0.001},
             noiseScale:  {min: 0.01, max: 0.15, default: 0.0375, step: 0.005},
             noiseBand:   {min: 0.05, max: 0.5, default: 0.1, step: 0.01},
             kaleidoGamma:{min: 0.2, max: 3.0, default: 0.65, step: 0.05},
@@ -951,7 +956,8 @@
             "audiodots":    [],
             "lissajous":    ["lineSpeed", "lineAmp", "modLineSpeedRate", "modLineSpeedLevel"],
             "borderrect":   [],
-            "noisekaleido": ["driftSpeed", "noiseScale", "noiseBand", "kaleidoGamma"]
+            "noisekaleido": ["driftSpeed", "noiseScale", "noiseBand", "kaleidoGamma"],
+            "cube":         ["scale", "angleRateX", "angleRateY", "angleRateZ"]
         };
 
         const FLOW_PARAMS = {
@@ -999,6 +1005,37 @@
             return 'in' + paramName.charAt(0).toUpperCase() + paramName.slice(1);
         }
 
+        // Update visibility of dynamic controls based on current visualizer
+        function updateDynamicControls() {
+            const ps = document.querySelector('parameter-settings');
+            const emitter = ps ? (EMITTER_NAMES[ps.currentEmitter] || "").toLowerCase() : "";
+            const flow    = ps ? (FLOW_NAMES[ps.currentFlow] || "").toLowerCase() : "";
+
+            // Show/hide elements with data-emitters and/or data-flows attributes
+            const allControls = document.querySelectorAll('[data-emitters], [data-flows]');
+
+            allControls.forEach(control => {
+                let visible = false;
+                if (control.dataset.emitters) {
+                    const list = control.dataset.emitters.split(',').map(v => v.trim().toLowerCase());
+                    if (list.includes(emitter)) visible = true;
+                }
+                if (control.dataset.flows) {
+                    const list = control.dataset.flows.split(',').map(v => v.trim().toLowerCase());
+                    if (list.includes(flow)) visible = true;
+                }
+                control.style.display = visible ? '' : 'none';
+            });
+
+            // Handle the dynamicControl section visibility separately
+            const dynamicContainer = document.querySelector('.dynamicControl');
+            if (dynamicContainer) {
+                const visibleChildren = dynamicContainer.querySelectorAll('[data-emitters], [data-flows]');
+                const visibleCount = Array.from(visibleChildren).filter(c => c.style.display !== 'none').length;
+                dynamicContainer.style.display = visibleCount > 0 ? '' : 'none';
+            }
+        }
+
         // *************************************************************************************
         // FUNCTIONS TO APPLY NOTIFICATIONS FROM PROGRAM ***************************************
 
@@ -1011,6 +1048,7 @@
 
                 const ps = document.querySelector('parameter-settings');
                 if (ps) ps.updateForEmitter(changeReceived);
+                updateDynamicControls();
             }
 
             // Flow selection receipt (20-39)
@@ -1021,6 +1059,7 @@
 
                 const ps = document.querySelector('parameter-settings');
                 if (ps) ps.updateForFlow(flowIdx);
+                updateDynamicControls();
             }
 
         }

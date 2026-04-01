@@ -27,7 +27,12 @@
 #include "flows/flow_fromCenter.h"
 #include "flows/flow_directional.h"
 #include "flows/flow_rings.h"
-#include "emitters.h"
+#include "emitters/emitters_other.h"
+#include "emitters/emitter_orbitalDots.h"
+#include "emitters/emitter_swarmingDots.h"
+#include "emitters/emitter_lissajousLine.h"
+#include "emitters/emitter_noiseKaleido.h"
+#include "emitters/emitter_cube.h"
 #include "modulators.h"
 
 namespace flowFields {
@@ -43,6 +48,7 @@ namespace flowFields {
         emitLissajousLine,
         emitRainbowBorder,
         emitNoiseKaleido,
+        emitCube,
     };
 
     const FlowPrepFn FLOW_PREPARE[] = {
@@ -207,6 +213,14 @@ namespace flowFields {
         cNoiseScale = noiseKaleido.noiseScale;
         cNoiseBand = noiseKaleido.noiseBand;
         cKaleidoGamma = noiseKaleido.kaleidoGamma;
+        // Emitter: cube
+        cScale = cube.scale;
+        cAngleRateX = cube.angleRate[0];
+        cAngleRateY = cube.angleRate[1];
+        cAngleRateZ = cube.angleRate[2];
+        cAngleFreezeX = cube.angleFreeze[0];
+        cAngleFreezeY = cube.angleFreeze[1];
+        cAngleFreezeZ = cube.angleFreeze[2];
     }
 
     // Read cVars into component structs (called every frame)
@@ -235,6 +249,13 @@ namespace flowFields {
         noiseKaleido.noiseScale = cNoiseScale;
         noiseKaleido.noiseBand = cNoiseBand;
         noiseKaleido.kaleidoGamma = cKaleidoGamma;
+        cube.scale = cScale;
+        cube.angleRate[0] = cAngleRateX;
+        cube.angleRate[1] = cAngleRateY;
+        cube.angleRate[2] = cAngleRateZ;
+        cube.angleFreeze[0] = cAngleFreezeX;
+        cube.angleFreeze[1] = cAngleFreezeY;
+        cube.angleFreeze[2] = cAngleFreezeZ;
         // Flow field + modulator
         syncFlowFromCVars();
     }

@@ -39,7 +39,9 @@ const char* const GLOBAL_PARAMS[] PROGMEM = {
 
 const uint8_t GLOBAL_PARAM_COUNT = 2;
 
-// EMITTERS ****************************************
+// ═══════════════════════════════════════════════════════════════════
+//  EMITTERS
+// ═══════════════════════════════════════════════════════════════════
 
 // Emitter names in PROGMEM
 const char orbitaldots_str[] PROGMEM = "orbitaldots";
@@ -48,13 +50,13 @@ const char audiodots_str[] PROGMEM = "audiodots";
 const char lissajous_str[] PROGMEM = "lissajous";
 const char borderrect_str[] PROGMEM = "borderrect";
 const char noisekaleido_str[] PROGMEM = "noisekaleido";
-
+const char cube_str[] PROGMEM = "cube";
 
 const char* const EMITTERS[] PROGMEM = {
-      orbitaldots_str, swarmingdots_str, audiodots_str, lissajous_str, borderrect_str, noisekaleido_str
+      orbitaldots_str, swarmingdots_str, audiodots_str, lissajous_str, borderrect_str, noisekaleido_str, cube_str
    };
 
-const uint8_t EMITTER_COUNTS[] = {6};
+const uint8_t EMITTER_COUNTS[] = {7};
 
 // Emitter params
 const char* const ORBITALDOTS_PARAMS[] PROGMEM = {
@@ -73,6 +75,9 @@ const char* const BORDERRECT_PARAMS[] PROGMEM = {};
 const char* const NOISEKALEIDO_PARAMS[] PROGMEM = {
    "driftSpeed", "noiseScale", "noiseBand", "kaleidoGamma"
 };
+const char* const CUBE_PARAMS[] PROGMEM = {
+   "scale", "angleRateX", "angleRateY", "angleRateZ"
+};
 
 // Struct to hold emitter name and parameter array reference
 struct EmitterParamEntry {
@@ -88,6 +93,7 @@ const EmitterParamEntry EMITTER_PARAM_LOOKUP[] PROGMEM = {
    {"lissajous", LISSAJOUS_PARAMS, 4},
    {"borderrect", BORDERRECT_PARAMS, 0},
    {"noisekaleido", NOISEKALEIDO_PARAMS, 4},
+   {"cube", CUBE_PARAMS, 4},
 };
 
 static const EmitterParamEntry* getEmitterParams(uint8_t emitterIdx) {
@@ -95,7 +101,9 @@ static const EmitterParamEntry* getEmitterParams(uint8_t emitterIdx) {
       return &EMITTER_PARAM_LOOKUP[emitterIdx];
 }
 
-// FLOW FIELDS ****************************************
+// ═══════════════════════════════════════════════════════════════════
+//  FLOWS
+// ═══════════════════════════════════════════════════════════════════
 
 // Flow names in PROGMEM
 const char noise_str[] PROGMEM = "noise";
@@ -206,35 +214,55 @@ float cRampDecay = 100.f;
 float cPeakBase = 1.0f;
 float cExpDecayFactor = 0.9f;
 
-//ColorTrails
+// Global/Shared
 float cPersistence = 0.05f;
+float cColorShift = 0.10f;
 bool cUseRainbow = false;
-float cXFreq = 0.33f;
-float cYFreq = 0.32f;
+
+// EMITTERS -----------------------
+
+// Dot family shared ------
+uint8_t cNumDots = 3;
+float cDotDiam = 1.5f;
+// orbitalDots 
 float cOrbitSpeed = 0.15f;
+float cOrbitDiam = 10.0f;
 float cModOrbitSpeedRate = 0.00005f;
 float cModOrbitSpeedLevel = 1.0f;
 float cModOrbitDiamRate = 0.0005f;
 float cModOrbitDiamLevel = 1.0f;
-float cXShift = 1.5f;
-float cYShift = 1.5f;
-float cOrbitDiam = 10.0f;
-float cColorSpeed = 0.10f;
-uint8_t cNumDots = 3;
-float cDotDiam = 1.5f;
+// swarmingDots
 float cSwarmSpeed = 0.5f;
 float cSwarmSpread = 0.5f;
 float cModSwarmSpreadRate = 1.0f;
 float cModSwarmSpreadLevel = 1.0f;
+// lissajous line
 float cLineSpeed = 0.35f;
+float cLineAmp = 13.5f;
 float cModLineSpeedRate = 1.0f;
 float cModLineSpeedLevel = 0.0f;
+//noiseKaleido
 float cDriftSpeed = 0.35f;
 float cNoiseScale = 0.0375f;
 float cNoiseBand = 0.1f;
 float cKaleidoGamma = 0.65f;
-float cColorShift = 0.10f;
-float cLineAmp = 13.5f;
+// cube
+float cScale = 1.f;
+float cAngleRateX = 0.02f;
+float cAngleRateY = 0.03f;
+float cAngleRateZ = 0.01f;
+bool cAngleFreezeX = false;
+bool cAngleFreezeY = false;
+bool cAngleFreezeZ = false;
+
+// FLOWS -----------------------
+// shared
+float cBlendFactor = 0.45f;
+// noiseFlow 
+float cXFreq = 0.33f;
+float cYFreq = 0.32f;
+float cXShift = 1.5f;
+float cYShift = 1.5f;
 float cXAmp = 1.0f;
 float cYAmp = 1.0f;
 float cXSpeed = 0.15f;
@@ -245,18 +273,21 @@ float cModSpeedRate = 0.1f;
 float cModSpeedLevel = 0.1f;
 float cModShiftRate = 0.5f;
 float cModShiftLevel = 0.5f;
+//flowFromCenter
 float cRadialStep = 0.15f;
-float cBlendFactor = 0.45f;
+// directionalFlow
 float cWindStep = 0.95f;
 float cRotateSpeed = 0.25f;
 float cWaveAmp = 0.0f;
 float cWaveFreq = 0.20f;
 float cWaveSpeed = 1.20f;
+// ringFlow
 float cInnerSwirl = -0.2f;
 float cOuterSwirl = 0.2f;
 float cMidDrift = 0.3f;
 float cModBreatheRate = 1.0f;
 float cModBreatheLevel = 1.0f;
+
 
 ArduinoJson::JsonDocument sendDoc;
 ArduinoJson::JsonDocument receivedJSON;
@@ -387,7 +418,6 @@ void sendReceiptString(String receivedID, String receivedValue) {
    X(float, ModOrbitSpeedLevel, 1.0f) \
    X(float, ModOrbitDiamRate, 0.0005f) \
    X(float, ModOrbitDiamLevel, 1.0f) \
-   X(float, ColorSpeed, 0.10f) \
    X(uint8_t, NumDots, 3) \
    X(float, DotDiam, 1.5f) \
    X(float, SwarmSpeed, 0.5f) \
@@ -426,7 +456,14 @@ void sendReceiptString(String receivedID, String receivedValue) {
    X(float, OuterSwirl, 0.24f) \
    X(float, MidDrift, 0.42f) \
    X(float, ModBreatheRate, 1.0f) \
-   X(float, ModBreatheLevel, 1.0f)
+   X(float, ModBreatheLevel, 1.0f) \
+   X(float, Scale, 1.0f) \
+   X(float, AngleRateX, 0.02f) \
+   X(float, AngleRateY, 0.03f) \
+   X(float, AngleRateZ, 0.01f) \
+   X(bool, AngleFreezeX, false) \
+   X(bool, AngleFreezeY, false) \
+   X(bool, AngleFreezeZ, false)
 
 
 // Auto-generated helper functions using X-macros
@@ -888,6 +925,10 @@ void processCheckbox(String receivedID, bool receivedValue ) {
    if (receivedID == "cx7") {autoFloor = receivedValue;};
    
    if (receivedID == "cx11") {mappingOverride = receivedValue;};
+
+   if (receivedID == "cx21") {cAngleFreezeX = receivedValue;};
+   if (receivedID == "cx22") {cAngleFreezeY = receivedValue;};
+   if (receivedID == "cx23") {cAngleFreezeZ = receivedValue;};
 
    if (receivedID == "cx32") {cUseRainbow = receivedValue;};
 
