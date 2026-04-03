@@ -1,11 +1,11 @@
 #pragma once
 
 // ═══════════════════════════════════════════════════════════════════
-//  FROM-CENTER FLOW FIELD — flow_fromCenter.h
+//  RADIAL FLOW FIELD — flow_radial.h
 // ═══════════════════════════════════════════════════════════════════
 //
-//  Radial outward transport: each pixel samples from a point closer
-//  to the grid center, causing color to flow outward.
+//  Radial transport: each pixel samples from a point closer to or
+//  farther from the grid center, causing color to flow outward or inward.
 //
 //  Ported from Python apply_from_center_tail() in _5.py (mode 15).
 
@@ -15,31 +15,35 @@ namespace flowFields {
     FL_FAST_MATH_BEGIN
     FL_OPTIMIZATION_LEVEL_O3_BEGIN
 
-    struct FromCenterParams {
-        float radialStep        = 0.18f;   // how far inward to sample (controls outward speed)
+    struct RadialParams {
+        float radialStep        = 0.18f;   // how far to sample (controls radial speed)
         float blendFactor       = 0.45f;   // blend factor (0 = keep current, 1 = fully transport)
+        bool  outward           = false;   // false = radial in, true = radial out
     };
 
-    FromCenterParams    fromCenter;
+    RadialParams    radial;
 
     // --- Prepare: nothing to build (geometry is purely radial) ---
 
-    static void fromCenterPrepare(float t) {
+    static void radialPrepare(float t) {
         (void)t;
     }
 
 
-    // --- Advect: radial outward transport with clamped bilinear sampling + fade ---
+    // --- Advect: radial transport with clamped bilinear sampling + fade ---
 
-    static void fromCenterAdvect(float dt) {
+    static void radialAdvect(float dt) {
         float cx = (WIDTH  - 1) * 0.5f;
         float cy = (HEIGHT - 1) * 0.5f;
 
         // Frame-rate-independent fade: half-life = persistence seconds
         float fade = fl::powf(0.5f, dt / vizConfig.persistence);
 
-        float step = fromCenter.radialStep;
-        float frac = fromCenter.blendFactor;
+        float step = radial.radialStep;
+        if (radial.outward) {
+            step *= -1.f;
+        }
+        float frac = radial.blendFactor;
         float inv  = 1.0f - frac;
 
         // Copy live grid to scratch buffer

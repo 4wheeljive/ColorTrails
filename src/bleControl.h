@@ -108,7 +108,7 @@ static const EmitterParamEntry* getEmitterParams(uint8_t emitterIdx) {
 
 // Flow names in PROGMEM
 const char noise_str[] PROGMEM = "noise";
-const char fromcenter_str[] PROGMEM = "fromcenter";
+const char radial_str[] PROGMEM = "radial";
 const char directional_str[] PROGMEM = "directional";
 const char rings_str[] PROGMEM = "rings";
 const char spiral_str[] PROGMEM = "spiral";
@@ -116,7 +116,7 @@ const char spiral_str[] PROGMEM = "spiral";
 const uint8_t FLOW_COUNTS[] = {5};
 
 const char* const FLOWS[] PROGMEM = {
-      noise_str, fromcenter_str, directional_str, rings_str, spiral_str
+      noise_str, radial_str, directional_str, rings_str, spiral_str
    };
    
 // Flow field params
@@ -126,7 +126,7 @@ const char* const NOISE_PARAMS[] PROGMEM = {
    "modSpeedRate", "modSpeedLevel",
    "modShiftRate", "modShiftLevel"
 };
-const char* const FROM_CENTER_PARAMS[] PROGMEM = {
+const char* const RADIAL_PARAMS[] PROGMEM = {
    "radialStep", "blendFactor"
 };
 const char* const DIRECTIONAL_PARAMS[] PROGMEM = {
@@ -150,7 +150,7 @@ struct FlowParamEntry {
 
 const FlowParamEntry FLOW_PARAM_LOOKUP[] PROGMEM = {
    {"noise", NOISE_PARAMS, 14},
-   {"fromcenter", FROM_CENTER_PARAMS, 2},
+   {"radial", RADIAL_PARAMS, 2},
    {"directional", DIRECTIONAL_PARAMS, 6},
    {"rings", RINGS_PARAMS, 5},
    {"spiral", SPIRAL_PARAMS, 3}
@@ -298,7 +298,7 @@ float cModBreatheRate = 1.0f;
 float cModBreatheLevel = 1.0f;
 // spiral
 float cAngularStep = 0.28f;
-bool cSpiralOutward = false;
+bool cOutward = false;
 
 
 ArduinoJson::JsonDocument sendDoc;
@@ -479,7 +479,7 @@ void sendReceiptString(String receivedID, String receivedValue) {
    X(bool, AngleFreezeY, false) \
    X(bool, AngleFreezeZ, false) \
    X(float, AngularStep, 0.28f) \
-   X(bool, SpiralOutward, false)
+   X(bool, Outward, false)
 
 
 // Auto-generated helper functions using X-macros
@@ -946,7 +946,7 @@ void processCheckbox(String receivedID, bool receivedValue ) {
    if (receivedID == "cx22") {cAngleFreezeY = receivedValue;};
    if (receivedID == "cx23") {cAngleFreezeZ = receivedValue;};
 
-   if (receivedID == "cx31") {cSpiralOutward = receivedValue;};
+   if (receivedID == "cx31") {cOutward = receivedValue;};
    if (receivedID == "cx32") {cUseRainbow = receivedValue;};
 
 }
@@ -974,9 +974,9 @@ void processString(String receivedID, String receivedValue ) {
    class ButtonCharacteristicCallbacks : public NimBLECharacteristicCallbacks {
       void onWrite(NimBLECharacteristic *pCharacteristic, NimBLEConnInfo& connInfo) override {
 
-         String value = String(pCharacteristic->getValue().c_str());
-         if (value.length() > 0) {
-            
+         NimBLEAttValue value = pCharacteristic->getValue();
+         if (value.size() > 0) {
+
             uint8_t receivedValue = value[0];
             
             if (debug) {

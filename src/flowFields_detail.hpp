@@ -24,7 +24,7 @@
 #include "bleControl.h"
 #include "flowFieldsTypes.h"
 #include "flows/flow_noise.h"
-#include "flows/flow_fromCenter.h"
+#include "flows/flow_radial.h"
 #include "flows/flow_directional.h"
 #include "flows/flow_rings.h"
 #include "emitters/emitters_other.h"
@@ -54,7 +54,7 @@ namespace flowFields {
 
     const FlowPrepFn FLOW_PREPARE[] = {
         noiseFlowPrepare,
-        fromCenterPrepare,
+        radialPrepare,
         directionalPrepare,
         ringFlowPrepare,
         spiralPrepare,
@@ -62,7 +62,7 @@ namespace flowFields {
 
     const FlowAdvectFn FLOW_ADVECT[] = {
         noiseFlowAdvect,
-        fromCenterAdvect,
+        radialAdvect,
         directionalAdvect,
         ringFlowAdvect,
         spiralAdvect,
@@ -123,10 +123,11 @@ namespace flowFields {
                 cModShiftLevel = noiseFlow.modShift.modLevel;
                 break;
             }
-            case FLOW_FROMCENTER: {
-                fromCenter = FromCenterParams{};
-                cRadialStep = fromCenter.radialStep;
-                cBlendFactor = fromCenter.blendFactor;
+            case FLOW_RADIAL: {
+                radial = RadialParams{};
+                cRadialStep = radial.radialStep;
+                cBlendFactor = radial.blendFactor;
+                cOutward = radial.outward;
                 break;
             }
             case FLOW_DIRECTIONAL: {
@@ -153,7 +154,7 @@ namespace flowFields {
                 cAngularStep = spiral.angularStep;
                 cRadialStep = spiral.radialStep;
                 cBlendFactor = spiral.blendFactor;
-                cSpiralOutward = spiral.outward;
+                cOutward = spiral.outward;
                 break;
             }
             default: break;
@@ -177,9 +178,10 @@ namespace flowFields {
         noiseFlow.modSpeed.modLevel = cModSpeedLevel;
         noiseFlow.modShift.modRate = cModShiftRate;
         noiseFlow.modShift.modLevel = cModShiftLevel;
-        // From-center flow
-        fromCenter.radialStep = cRadialStep;
-        fromCenter.blendFactor = cBlendFactor;
+        // Radial flow
+        radial.radialStep = cRadialStep;
+        radial.blendFactor = cBlendFactor;
+        radial.outward = cOutward;
         // Directional flow
         directional.windStep = cWindStep;
         directional.blendFactor = cBlendFactor;
@@ -197,7 +199,7 @@ namespace flowFields {
         spiral.angularStep = cAngularStep;
         spiral.radialStep = cRadialStep;
         spiral.blendFactor = cBlendFactor;
-        spiral.outward = cSpiralOutward;
+        spiral.outward = cOutward;
     }
 
     // Push emitter + universal defaults into cVars (called on emitter/mode change)

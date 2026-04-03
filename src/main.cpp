@@ -15,7 +15,7 @@ CREDITS:
 //#include "LittleFS.h"
 //#define FORMAT_LITTLEFS_IF_FAILED true 
 
-bool debug = false;
+bool debug = true;
 bool audioEnabled = false;
 bool audioLatencyDiagnostics = false;
 
