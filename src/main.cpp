@@ -26,8 +26,8 @@ bool audioLatencyDiagnostics = false;
 #endif
 */
 
-//#define BIG_BOARD
-#undef BIG_BOARD
+#define BIG_BOARD
+//#undef BIG_BOARD
 
 #define PIN0 2
 
@@ -76,8 +76,8 @@ const uint16_t MAX_DIMENSION = FL_MAX(WIDTH, HEIGHT);
 fl::CRGB leds[NUM_LEDS];
 uint16_t ledNum = 0;
 
-//bleControl variables ***********************************************************************
-//elements that must be set before #include "bleControl.h" 
+// ***************************************************************************************
+// elements that must be set before #include "bleControl.h"  
 
 uint8_t EMITTER = 0;
 uint8_t FLOW = 0;  // FLOW_NOISE; declared before enum is in scope
@@ -89,11 +89,11 @@ bool mappingOverride = false;
 #include "audio/audioInput.h"
 #include "audio/audioProcessing.h"
 #include "bleControl.h"
-#include "flowFields.hpp"
+#include "flowFieldsEngine.hpp"
 
 using namespace fl;
 
-// MAPPINGS **********************************************************************************
+// MAPPINGS *****************************************************************************
 
 extern const uint16_t progTopDown[NUM_LEDS] PROGMEM;
 extern const uint16_t progBottomUp[NUM_LEDS] PROGMEM;

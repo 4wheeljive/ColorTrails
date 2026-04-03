@@ -4,7 +4,7 @@
 //  flowFieldsTypes.h — Anchor header for the flowFields system.
 //  All shared types, constants, global instances, noise generators,
 //  math helpers, and drawing primitives live here.
-//  Sub-headers (flow_noise.h, future emitter headers) include this.
+//  Sub-headers (flow_noise.h, emitter_swarmingDots.h, etc.) include this.
 // ═══════════════════════════════════════════════════════════════════
 
 #include <FastLED.h>

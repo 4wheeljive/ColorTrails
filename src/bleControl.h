@@ -1,14 +1,7 @@
 #pragma once
 
 #include "FastLED.h"
-
 #include <ArduinoJson.h>
-
-/* If you use more than ~4 characteristics, you need to increase numHandles in this file:
-C:\Users\...\.platformio\packages\framework-arduinoespressif32\libraries\BLE\src\BLEServer.h
-Setting numHandles = 60 has worked for 7 characteristics.  
-*/
-
 #include <NimBLEDevice.h>
 
 #include <string>
@@ -31,7 +24,9 @@ BusParamGetterFn getBusParam = nullptr;
 extern uint8_t EMITTER;
 extern uint8_t FLOW;
 
-// GLOBAL PARAMETERS *******************************
+// ═══════════════════════════════════════════════════════════════════
+// GLOBAL PARAMETERS
+// ═══════════════════════════════════════════════════════════════════
 
 const char* const GLOBAL_PARAMS[] PROGMEM = {
    "persistence", "colorShift"
@@ -161,8 +156,10 @@ static const FlowParamEntry* getFlowParams(uint8_t flowIdx) {
       return &FLOW_PARAM_LOOKUP[flowIdx];
 }
 
-// AUDIO SETTINGS ==================================================
-
+// ═══════════════════════════════════════════════════════════════════
+// AUDIO SETTINGS
+// ═══════════════════════════════════════════════════════════════════
+ 
 const char* const AUDIO_PARAMS[] PROGMEM = {
 "maxBins", "audioFloor", "audioGain",
 "avLevelerTarget", "autoFloorAlpha", "autoFloorMin", "autoFloorMax",
@@ -173,8 +170,9 @@ const char* const AUDIO_PARAMS[] PROGMEM = {
 
 const uint8_t AUDIO_PARAM_COUNT = 15;
 
-   
-// Parameter control *************************************************************************************
+// ═══════════════════════════════════════════════════════════════════
+//  MISCELLANEOUS CONTROLS
+// ═══════════════════════════════════════════════════════════════════
 
 uint8_t cBright = 35;
 uint8_t cMapping = 0;
@@ -200,28 +198,11 @@ fl::EaseType getEaseType(uint8_t value) {
 uint8_t cEaseSat = 0;
 uint8_t cEaseLum = 0;
 
-// PARAMETER CONTROLS ==================================================================
+// ═══════════════════════════════════════════════════════════════════
+//  PARAMETER DECLARATIONS
+// ═══════════════════════════════════════════════════════════════════
 
-// Audio
-bool maxBins = false;
-uint16_t cNoiseGateOpen = 70;
-uint16_t cNoiseGateClose = 50;
-float cAudioGain = 1.0f;      // Unified gain (internally maps to level × GAIN_SCALE_LEVEL, FFT × GAIN_SCALE_FFT)
-float cAudioFloor = 0.0f;     // Unified audio floor (internally maps to level × 0.05, FFT × 0.3)
-bool autoFloor = false;
-float cAutoFloorAlpha = 0.01f;
-float cAutoFloorMin = 0.0f;
-float cAutoFloorMax = 0.5f;
-bool avLeveler = true;
-float cAvLevelerTarget = 0.5f;
-float cThreshold = 0.40f;
-float cMinBeatInterval = 75.f;
-float cRampAttack = 0.f;
-float cRampDecay = 100.f;
-float cPeakBase = 1.0f;
-float cExpDecayFactor = 0.9f;
-
-// Global/Shared
+// GLOBAL -------------------------
 float cPersistence = 0.05f;
 float cColorShift = 0.10f;
 bool cUseRainbow = false;
@@ -300,12 +281,30 @@ float cModBreatheLevel = 1.0f;
 float cAngularStep = 0.28f;
 bool cOutward = false;
 
+// AUDIO -----------------------
+bool maxBins = false;
+uint16_t cNoiseGateOpen = 70;
+uint16_t cNoiseGateClose = 50;
+float cAudioGain = 1.0f; 
+float cAudioFloor = 0.0f;
+bool autoFloor = false;
+float cAutoFloorAlpha = 0.01f;
+float cAutoFloorMin = 0.0f;
+float cAutoFloorMax = 0.5f;
+bool avLeveler = true;
+float cAvLevelerTarget = 0.5f;
+float cThreshold = 0.40f;
+float cMinBeatInterval = 75.f;
+float cRampAttack = 0.f;
+float cRampDecay = 100.f;
+float cPeakBase = 1.0f;
+float cExpDecayFactor = 0.9f;
 
 ArduinoJson::JsonDocument sendDoc;
 ArduinoJson::JsonDocument receivedJSON;
 
-//*******************************************************************************
-//BLE CONFIGURATION *************************************************************
+//*************************************************************************************
+//BLE CONFIGURATION *******************************************************************
 
 NimBLEServer* pServer = NULL;
 NimBLECharacteristic* pButtonCharacteristic = NULL;
@@ -324,8 +323,8 @@ bool wasConnected = false;
 #define STRING_CHARACTERISTIC_UUID     "19b10004-e8f2-537e-4f6c-d104768a1214"
 
 
-//*******************************************************************************
-// CONTROL FUNCTIONS ************************************************************
+//*************************************************************************************
+// CONTROL FUNCTIONS ******************************************************************
 
 // UI update functions ***********************************************
 
@@ -402,7 +401,7 @@ void sendReceiptString(String receivedID, String receivedValue) {
    }
 }
 
-//***********************************************************************
+//*****************************************************************************
 // PARAMETER/PRESET MANAGEMENT SYSTEM ("PPMS")
 // X-Macro table 
 #define PARAMETER_TABLE \
@@ -889,8 +888,7 @@ void processButton(uint8_t receivedValue) {
        }
    }*/
 
-   //fxWave2d, animartrix
-   //if (receivedValue == 160) { fancyTrigger = true; }
+   //if (receivedValue == 160) { Trigger = true; }
    
 }
 
@@ -1124,8 +1122,6 @@ void bleSetup() {
       
 
       //**********************************************************
-
-      //pService->start();
 
       pAdvertising = NimBLEDevice::getAdvertising();
       pAdvertising->addServiceUUID(SERVICE_UUID);

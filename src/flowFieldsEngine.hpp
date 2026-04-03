@@ -1,25 +1,5 @@
 #pragma once
 
-//=====================================================================================
-//  NOTE: Flow Fields was initially called Color Trails. 
-//  It will take a little time to get everything renamed internally.  
-//
-//  colortrails began with a FastLED Reddit post by u/StefanPetrick:
-//  https://www.reddit.com/r/FastLED/comments/1rny5j3/i_used_codex_for_the_first_time/
-//
-//  I had Claude help me port it to a C++ Arduino/FastLED-friendly sketch and then
-//  (2) implement that as a new "colorTrails" program in my AuroraPortal playground:
-//  https://github.com/4wheeljive/AuroraPortal
-//
-//  As Stefan has shared subsequent ideas, I've been implementing them in colorTrails.
-//
-//  It quickly became clear that we were going to want to do things with colorTrails
-//  that would be difficult if it was structured as just one of AuroraPortal's dozen
-//  or so visualizer programs. So I cloned my AuroraPortal repo to this project,
-//  stripped away all of the other programs, and have started redoing the architecture,
-//  from the C++ core out to the web UI, to best keep up with Stefan's fount of ideas.
-//
-//=====================================================================================
 
 #include "bleControl.h"
 #include "flowFieldsTypes.h"
