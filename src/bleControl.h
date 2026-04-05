@@ -13,6 +13,7 @@ Setting numHandles = 60 has worked for 7 characteristics.
 
 #include <string>
 
+#include "hosted_ble_bridge.h"
 #include "componentEnums.h"
 
 //#include <FS.h>
@@ -904,12 +905,14 @@ void processString(String receivedID, String receivedValue ) {
    void onConnect(NimBLEServer* pServer, NimBLEConnInfo& connInfo) override {
       deviceConnected = true;
       wasConnected = true;
+      Serial.println("[ble] connected");
       if (debug) {Serial.println("Device Connected");}
    };
 
    void onDisconnect(NimBLEServer* pServer, NimBLEConnInfo& connInfo, int reason) override {
       deviceConnected = false;
       wasConnected = true;
+      Serial.printf("[ble] disconnected reason=%d\n", reason);
    }
    };
 
@@ -1024,6 +1027,11 @@ void processString(String receivedID, String receivedValue ) {
 
 void bleSetup() {
 
+      if (!hostedBlePrepare()) {
+         Serial.println("[ble] Hosted BLE not ready; BLE setup aborted.");
+         return;
+      }
+
       NimBLEDevice::init("Flow Fields");
       NimBLEDevice::setMTU(517);  // Request max MTU for larger JSON payloads
 
@@ -1067,7 +1075,7 @@ void bleSetup() {
 
       //**********************************************************
 
-      //pService->start();
+      pService->start();
 
       pAdvertising = NimBLEDevice::getAdvertising();
       pAdvertising->addServiceUUID(SERVICE_UUID);

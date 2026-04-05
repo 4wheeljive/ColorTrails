@@ -277,6 +277,9 @@ namespace flowFields {
         for (uint8_t y = 0; y < HEIGHT; y++) {
             for (uint8_t x = 0; x < WIDTH; x++) {
                 uint16_t idx = xyFunc(x, y);
+                if (idx >= NUM_LEDS) {
+                    continue;
+                }
                 leds[idx].r = f2u8(gR[y][x]);
                 leds[idx].g = f2u8(gG[y][x]);
                 leds[idx].b = f2u8(gB[y][x]);

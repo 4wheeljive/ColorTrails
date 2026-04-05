@@ -7,6 +7,9 @@ CREDITS:
 //===============================================================================================================
 
 #include <Arduino.h>
+#if defined(ARDUINO_ARCH_ESP32)
+#include <esp_timer.h>
+#endif
 
 /*// ESP32-P4 has no on-chip BT controller (SOC_BT_SUPPORTED is undefined),
 // so the Arduino core doesn't compile btStarted(). esp-nimble-cpp calls it
@@ -23,7 +26,7 @@ extern "C" bool btStarted() { return false; }
 //#include "LittleFS.h"
 //#define FORMAT_LITTLEFS_IF_FAILED true 
 
-bool debug = false;
+bool debug = true;
 bool audioEnabled = false;
 bool audioLatencyDiagnostics = false;
 
@@ -84,6 +87,27 @@ const uint16_t MAX_DIMENSION = FL_MAX(WIDTH, HEIGHT);
 
 fl::CRGB leds[NUM_LEDS];
 uint16_t ledNum = 0;
+static bool sLoopEnteredLogged = false;
+static bool sLoopProbeLogged = false;
+static bool sBeforeFlowLogged = false;
+static bool sAfterFlowLogged = false;
+static bool sAfterShowLogged = false;
+static bool sAdvRestartPending = false;
+static uint32_t sAdvRestartAtMs = 0;
+static uint32_t sFrameCount = 0;
+static uint64_t sNextFrameAtUs = 0;
+static uint64_t sLastStatusUs = 0;
+static uint64_t sLastDiagUs = 0;
+static uint8_t sDiagPrints = 0;
+constexpr uint64_t kFrameIntervalUs = 20000;   // 50 FPS cap
+constexpr uint32_t kAdvRestartDelayMs = 250;   // Small debounce before restarting adverts
+constexpr bool kBypassFlowFieldsForStabilityTest = true;
+constexpr bool kDisableBleForDisplayBringup = true;
+constexpr bool kVerboseFrameTrace = true;
+constexpr bool kDisablePixelOutputForDiag = false;
+constexpr uint32_t kShowEveryNFrames = 25;     // 50 FPS loop -> 2 FPS show calls
+constexpr uint8_t kDiagBrightness = 35;
+constexpr bool kRunSetupOutputTest = true;
 
 //bleControl variables ***********************************************************************
 //elements that must be set before #include "bleControl.h" 
@@ -97,7 +121,20 @@ bool mappingOverride = false;
 
 //#include "audio/audioInput.h"
 //#include "audio/audioProcessing.h"
+#if defined(FLOWFIELDS_PARLIO_ONLY)
+struct DummyAdvertising {
+	void start() {}
+};
+static DummyAdvertising* pAdvertising = nullptr;
+static bool displayOn = true;
+static bool deviceConnected = false;
+static bool wasConnected = false;
+static uint8_t cMapping = 0;
+static uint8_t cOverrideMapping = 0;
+static inline void bleSetup() {}
+#else
 #include "bleControl.h"
+#endif
 #include "flowFields.hpp"
 
 using namespace fl;
@@ -138,6 +175,11 @@ void setup() {
 	Serial.begin(115200);
 	Serial.setTxTimeoutMs(1);  // 1ms timeout — avoids unsigned underflow
 	delay(1000);
+	delay(2500);  // Give monitor time to attach after reset/upload.
+	printf("[flowfields] fw-tag=FFDBG4 build=%s %s\n", __DATE__, __TIME__);
+	fflush(stdout);
+	printf("[flowfields] setup start\n");
+	fflush(stdout);
 
 	FastLED.setExclusiveDriver("PARLIO");
 
@@ -174,11 +216,46 @@ void setup() {
 	#endif
 	
 	FastLED.setBrightness(BRIGHTNESS);
+	if (kBypassFlowFieldsForStabilityTest) {
+		FastLED.setBrightness(kDiagBrightness);
+	}
+	printf("[flowfields] FastLED controllers=%d first_size=%d brightness=%u\n",
+	       FastLED.count(), FastLED.size(), FastLED.getBrightness());
+	fflush(stdout);
+
+	if (kRunSetupOutputTest) {
+		printf("[flowfields] setup output test: RED ON\n");
+		for (uint16_t i = 0; i < NUM_LEDS; ++i) {
+			leds[i] = CRGB(255, 0, 0);
+		}
+		FastLED.show();
+		delay(1000);
+
+		printf("[flowfields] setup output test: OFF\n");
+		FastLED.clear();
+		FastLED.show();
+		delay(300);
+		fflush(stdout);
+	}
 
 	FastLED.clear();
-	FastLED.show();
+	if (kDisablePixelOutputForDiag) {
+		printf("[flowfields] pixel output disabled (diag mode)\n");
+	} else {
+		FastLED.show();
+	}
 
-	bleSetup();
+	printf("[flowfields] calling bleSetup\n");
+	fflush(stdout);
+	if (kDisableBleForDisplayBringup) {
+		printf("[flowfields] bleSetup skipped (display bring-up mode)\n");
+	} else {
+		bleSetup();
+		printf("[flowfields] bleSetup returned\n");
+	}
+	fflush(stdout);
+	printf("[flowfields] setup complete\n");
+	fflush(stdout);
 
 	/*
 	if (!LittleFS.begin(true)) {
@@ -198,34 +275,48 @@ void setup() {
 //*****************************************************************************************
 
 void loop() {
-
-	//PROFILE_FRAME_BEGIN();
-
-	// Capture audio as early as possible each iteration to minimize
-	// the delay between DMA buffer availability and processing.
-	// sampleAudio() drains all pending DMA buffers, keeping only the
-	// newest. When captureAudioFrame() calls it again later (inside
-	// the pattern), readAll() returns 0 and the already-captured data
-	// is preserved and reused for FFT/bus processing.
-	/*if (audioEnabled) {
-		if (myAudio::audioInputInitialized) {
-			//PROFILE_START("audio_capture");
-			myAudio::sampleAudio();
-			//PROFILE_END();
-		}
-	}*/
-	
-	EVERY_N_SECONDS(3) {
-		uint8_t fps = FastLED.getFPS();
-		FASTLED_DBG(fps << " fps");
+	if (!sLoopEnteredLogged) {
+		printf("[flowfields] loop entered\n");
+		sLoopEnteredLogged = true;
 	}
-	
-	/*
-	EVERY_N_SECONDS(10) {
-		PROFILE_REPORT();
-		PROFILE_RESET();
+	if (!sLoopProbeLogged) {
+		printf("[flowfields] loop probe A\n");
+		sLoopProbeLogged = true;
 	}
-	*/
+
+	const uint32_t nowMs = ::millis();
+#if defined(ARDUINO_ARCH_ESP32)
+	const uint64_t nowUs = static_cast<uint64_t>(esp_timer_get_time());
+#else
+	const uint64_t nowUs = static_cast<uint64_t>(micros());
+#endif
+	if ((nowUs - sLastStatusUs) >= 1000000ULL) {
+		sLastStatusUs = nowUs;
+		printf("[flowfields] alive us=%llu frames=%lu displayOn=%u ble=%u\n",
+		       static_cast<unsigned long long>(nowUs),
+		       (unsigned long)sFrameCount,
+		       displayOn ? 1U : 0U,
+		       deviceConnected ? 1U : 0U);
+	}
+	if (sDiagPrints < 5 && (nowUs - sLastDiagUs) >= 1000000ULL) {
+		sLastDiagUs = nowUs;
+		++sDiagPrints;
+		printf("[flowfields] diag controllers=%d first_size=%d brightness=%u frame=%lu\n",
+		       FastLED.count(), FastLED.size(), FastLED.getBrightness(), (unsigned long)sFrameCount);
+		fflush(stdout);
+	}
+
+	if (sAdvRestartPending && pAdvertising != nullptr && (int32_t)(nowMs - sAdvRestartAtMs) >= 0) {
+		pAdvertising->start();
+		sAdvRestartPending = false;
+		if (debug) { Serial.println("Start advertising"); }
+	}
+
+	if (nowUs < sNextFrameAtUs) {
+		vTaskDelay(1);
+		return;
+	}
+	sNextFrameAtUs = nowUs + kFrameIntervalUs;
 
 	if (!displayOn){
 		FastLED.clear();
@@ -235,25 +326,62 @@ void loop() {
 
 		mappingOverride ? cMapping = cOverrideMapping : cMapping = defaultMapping;
 		defaultMapping = Mapping::TopDownProgressive;
-
-		if (!flowFields::flowFieldsInstance) {
-			flowFields::initFlowFields(myXY);
+		if (kBypassFlowFieldsForStabilityTest) {
+			for (uint16_t i = 0; i < NUM_LEDS; ++i) {
+				leds[i] = CRGB(255, 0, 0);
+			}
+			if (!sAfterFlowLogged) {
+				printf("[flowfields] flow bypass active (stability test)\n");
+				sAfterFlowLogged = true;
+			}
+		} else {
+			if (!flowFields::flowFieldsInstance) {
+				flowFields::initFlowFields(myXY);
+			}
+			if (!sBeforeFlowLogged) {
+				printf("[flowfields] before runFlowFields\n");
+				sBeforeFlowLogged = true;
+			}
+			flowFields::runFlowFields();
+			if (!sAfterFlowLogged) {
+				printf("[flowfields] after runFlowFields\n");
+				sAfterFlowLogged = true;
+			}
 		}
-		flowFields::runFlowFields();
 	}
 
-	//PROFILE_START("led_show");
-	FastLED.show();
-	//PROFILE_END();
-	
+	++sFrameCount;
+	if (kDisablePixelOutputForDiag) {
+		if (kVerboseFrameTrace && sFrameCount <= 10) {
+			printf("[flowfields] frame %lu show skipped\n", (unsigned long)sFrameCount);
+		}
+		if (!sAfterShowLogged) {
+			printf("[flowfields] FastLED.show skipped (pixel output disabled)\n");
+			sAfterShowLogged = true;
+		}
+	} else {
+		const bool doShowNow = (kShowEveryNFrames > 0U) && ((sFrameCount % kShowEveryNFrames) == 0U);
+		if (doShowNow) {
+			if (kVerboseFrameTrace) {
+				printf("[flowfields] frame %lu pre-show (throttled)\n", (unsigned long)sFrameCount);
+			}
+			FastLED.show();
+			if (kVerboseFrameTrace) {
+				printf("[flowfields] frame %lu post-show (throttled)\n", (unsigned long)sFrameCount);
+			}
+			if (!sAfterShowLogged) {
+				printf("[flowfields] after first FastLED.show (throttled)\n");
+				sAfterShowLogged = true;
+			}
+		}
+	}
+
 	if (!deviceConnected && wasConnected) {
 		if (debug) {Serial.println("Device disconnected.");}
-		delay(500); // give the bluetooth stack the chance to get things ready
-		pAdvertising->start();
-		if (debug) {Serial.println("Start advertising");}
+		sAdvRestartPending = true;
+		sAdvRestartAtMs = ::millis() + kAdvRestartDelayMs;
 		wasConnected = false;
 	}
 
-	//PROFILE_FRAME_END();
-
+	vTaskDelay(1);
 } // loop()
