@@ -8,15 +8,15 @@ enum Emitter : uint8_t {
     EMITTER_BORDERRECT,
     EMITTER_AUDIODOTS,
     EMITTER_NOISEKALEIDO,
-        // future: EMITTER_TRIANGLE, ...
+    EMITTER_CUBE,
     EMITTER_COUNT
 };
 
 enum Flow : uint8_t {
     FLOW_NOISE = 0,
-    FLOW_FROMCENTER,
+    FLOW_RADIAL,
     FLOW_DIRECTIONAL,
     FLOW_RINGS,
-    // future: FLOW_TOCENTER, FLOW_SPIRAL, FLOW_POLARWARP, ...
+    FLOW_SPIRAL,
     FLOW_COUNT
 };

@@ -26,21 +26,5 @@ Each ColorFlowField follows its own different rules and can produce characterist
 - directional / geometric flows?
 - smoke/vapor?
 
-A ColorFlowField may use one or more noise functions in its internal pipeline
-
-The initial NoiseFlowField is especially interesting because it creates these emergent, dynamic,
-turbulence-like shapes that remind one of a fluid simulation.
-It is like the result of wind blowing from two directions with varying intensities.
-
-
-
-
-Some early raw test footage:
-https://youtu.be/PCdHbcO4sa0&t=7m45s
-
-Some of Stefan's recent experiments:
-https://www.youtube.com/watch?v=iig2UNUMshA
-
-
 
 Copyright and licensing info to be added.

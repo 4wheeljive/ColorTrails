@@ -285,7 +285,36 @@
 
         <!-- Pattern Control Parameters -->
         <div class="section patternControl">
+            
+             <div class = "control-group">
+
+                <control-checkbox 
+                    label="AngleFreezeX" 
+                    data-my-number="21"
+                    data-emitters="cube"
+                    unchecked>
+                </control-checkbox>
+                <control-checkbox 
+                    label="AngleFreezeY" 
+                    data-my-number="22"
+                    data-emitters="cube"
+                    unchecked>
+                </control-checkbox>
+                <control-checkbox
+                    label="AngleFreezeZ"
+                    data-my-number="23"
+                    data-emitters="cube"
+                    unchecked>
+                </control-checkbox>
+                <control-checkbox
+                    label="Outward"
+                    data-my-number="31"
+                    data-flows="radial, spiral"
+                    unchecked>
+                </control-checkbox>
                 
+            </div>
+
             <parameter-settings></parameter-settings> 
 
             <!--<span style="display: flex; justify-content: flex-end;">
@@ -347,28 +376,11 @@
                     data-my-number="10"
                     data-visualizers="waves"
                     checked>
-                </control-checkbox>
+                </control-checkbox> -->
 
-                <control-checkbox 
-                    label="AngleFreezeX" 
-                    data-my-number="21"
-                    data-visualizers="cube"
-                    unchecked>
-                </control-checkbox>
-                <control-checkbox 
-                    label="AngleFreezeY" 
-                    data-my-number="22"
-                    data-visualizers="cube"
-                    unchecked>
-                </control-checkbox>
-                <control-checkbox 
-                    label="AngleFreezeZ" 
-                    data-my-number="23"
-                    data-visualizers="cube"
-                    unchecked>
-                </control-checkbox>
+               
                 
-                <div class = "control-group">
+                <!--<div class = "control-group">
                     <control-checkbox 
                         label="Manual Scene Mode" 
                         data-my-number="12"
@@ -677,7 +689,8 @@
                         component.updateConnectionState();
                     }
                 });
-                // (dynamic controls visibility removed — all controls always visible)
+                // Update dynamic controls visibility
+                updateDynamicControls();
             }
         };
 
@@ -868,8 +881,8 @@
         // ******************************************************************************************************
         // EMITTER / FLOW NAMES (parallel to ESP32 enums) *******************************************************
 
-        const EMITTER_NAMES = ["ORBITALDOTS", "SWARMINGDOTS", "AUDIODOTS", "LISSAJOUS", "BORDERRECT", "NOISEKALEIDO"];
-        const FLOW_NAMES    = ["NOISE", "FROMCENTER", "DIRECTIONAL", "RINGS"];
+        const EMITTER_NAMES = ["ORBITALDOTS", "SWARMINGDOTS", "AUDIODOTS", "LISSAJOUS", "BORDERRECT", "NOISEKALEIDO", "CUBE"];
+        const FLOW_NAMES    = ["NOISE", "RADIAL", "DIRECTIONAL", "RINGS", "SPIRAL"];
 
         // ******************************************************************************************************
         // PARAMETER REGISTRY *******************************************************************************
@@ -882,7 +895,6 @@
             // EMITTERS
             numDots:     {min: 1, max: 5, default: 3, step: 1},
             orbitSpeed:  {min: 0, max: 25, default: 2.0, step: 0.1},
-            colorSpeed:  {min: -2, max: 2, default: 0.10, step: 0.01},
             dotDiam:     {min: 0.1, max: 5, default: 1.5, step: 0.1},
             orbitDiam:   {min: 1, max: 20, default: 10, step: 0.5},
             modOrbitSpeedRate:  {min: 0.1, max: 10.0, default: 1.0, step: 0.1},
@@ -892,6 +904,8 @@
            
             swarmSpeed:  {min: -5, max: 5, default: 0.5, step: 0.1},
             swarmSpread: {min: 0, max: 3, default: 0.5, step: 0.1},
+            modSwarmSpeedRate:  {min: 0.1, max: 3.0, default: 1.0, step: 0.1},
+            modSwarmSpeedLevel: {min: 0, max: 2.0, default: 1.0, step: 0.1},
             modSwarmSpreadRate:  {min: 0.1, max: 3.0, default: 1.0, step: 0.1},
             modSwarmSpreadLevel: {min: 0, max: 2.0, default: 1.0, step: 0.1},
            
@@ -901,6 +915,10 @@
             lineAmp:     {min: 1, max: 20, default: 13.5, step: 0.5},
 
             driftSpeed:  {min: 0.01, max: 5, default: 0.35, step: 0.01},
+            scale:       {min: 0.5, max: 3.0, default: 1.0, step: 0.1},
+            angleRateX:  {min: -0.5, max: 0.5, default: 0.02, step: 0.001},
+            angleRateY:  {min: -0.5, max: 0.5, default: 0.03, step: 0.001},
+            angleRateZ:  {min: -0.5, max: 0.5, default: 0.01, step: 0.001},
             noiseScale:  {min: 0.01, max: 0.15, default: 0.0375, step: 0.005},
             noiseBand:   {min: 0.05, max: 0.5, default: 0.1, step: 0.01},
             kaleidoGamma:{min: 0.2, max: 3.0, default: 0.65, step: 0.05},
@@ -921,7 +939,7 @@
             modShiftRate:  {min: 0.1, max: 3.0, default: 0.5, step: 0.1},
             modShiftLevel: {min: 0, max: 2.0, default: 0.5, step: 0.1},
             
-            // FLOW: fromcenter
+            // FLOW: radial
             radialStep:  {min: 0.01, max: 2, default: 0.15, step: 0.01},
             blendFactor: {min: 0, max: 1, default: 0.45, step: 0.01},
 
@@ -938,6 +956,9 @@
             midDrift:        {min: 0, max: 2, default: 0.3, step: 0.01},
             modBreatheRate:  {min: 0.1, max: 3.0, default: 1.0, step: 0.1},
             modBreatheLevel: {min: 0, max: 2.0, default: 1.0, step: 0.1},
+
+            // FLOW: spiral
+            angularStep: {min: 0.01, max: 1.0, default: 0.28, step: 0.01},
         };
 
         // Parameter lists per component
@@ -946,19 +967,21 @@
         const EMITTER_PARAMS = {
             "orbitaldots":  ["numDots", "dotDiam", "orbitSpeed", "orbitDiam",
                             "modOrbitSpeedRate", "modOrbitSpeedLevel", "modOrbitDiamRate", "modOrbitDiamLevel"],
-            "swarmingdots": ["numDots", "dotDiam", "swarmSpeed", "swarmSpread",
+            "swarmingdots": ["numDots", "dotDiam", "swarmSpeed", "swarmSpread", "modSwarmSpeedRate", "modSwarmSpeedLevel",
                             "modSwarmSpreadRate", "modSwarmSpreadLevel"],
             "audiodots":    [],
             "lissajous":    ["lineSpeed", "lineAmp", "modLineSpeedRate", "modLineSpeedLevel"],
             "borderrect":   [],
-            "noisekaleido": ["driftSpeed", "noiseScale", "noiseBand", "kaleidoGamma"]
+            "noisekaleido": ["driftSpeed", "noiseScale", "noiseBand", "kaleidoGamma"],
+            "cube":         ["scale", "angleRateX", "angleRateY", "angleRateZ"]
         };
 
         const FLOW_PARAMS = {
             "noise":       ["xSpeed", "ySpeed", "xAmp", "yAmp", "xFreq", "yFreq", "xShift", "yShift", "modAmpRate", "modAmpLevel", "modSpeedRate", "modSpeedLevel", "modShiftRate", "modShiftLevel"],
-            "fromcenter":  ["radialStep", "blendFactor"],
+            "radial":      ["radialStep", "blendFactor"],
             "directional": ["windStep", "blendFactor", "rotateSpeed", "waveAmp", "waveFreq", "waveSpeed"],
-            "rings":       ["innerSwirl", "outerSwirl", "midDrift", "modBreatheRate", "modBreatheLevel"]
+            "rings":       ["innerSwirl", "outerSwirl", "midDrift", "modBreatheRate", "modBreatheLevel"],
+            "spiral":      ["angularStep", "radialStep", "blendFactor"]
         };
 
 
@@ -999,6 +1022,37 @@
             return 'in' + paramName.charAt(0).toUpperCase() + paramName.slice(1);
         }
 
+        // Update visibility of dynamic controls based on current visualizer
+        function updateDynamicControls() {
+            const ps = document.querySelector('parameter-settings');
+            const emitter = ps ? (EMITTER_NAMES[ps.currentEmitter] || "").toLowerCase() : "";
+            const flow    = ps ? (FLOW_NAMES[ps.currentFlow] || "").toLowerCase() : "";
+
+            // Show/hide elements with data-emitters and/or data-flows attributes
+            const allControls = document.querySelectorAll('[data-emitters], [data-flows]');
+
+            allControls.forEach(control => {
+                let visible = false;
+                if (control.dataset.emitters) {
+                    const list = control.dataset.emitters.split(',').map(v => v.trim().toLowerCase());
+                    if (list.includes(emitter)) visible = true;
+                }
+                if (control.dataset.flows) {
+                    const list = control.dataset.flows.split(',').map(v => v.trim().toLowerCase());
+                    if (list.includes(flow)) visible = true;
+                }
+                control.style.display = visible ? '' : 'none';
+            });
+
+            // Handle the dynamicControl section visibility separately
+            const dynamicContainer = document.querySelector('.dynamicControl');
+            if (dynamicContainer) {
+                const visibleChildren = dynamicContainer.querySelectorAll('[data-emitters], [data-flows]');
+                const visibleCount = Array.from(visibleChildren).filter(c => c.style.display !== 'none').length;
+                dynamicContainer.style.display = visibleCount > 0 ? '' : 'none';
+            }
+        }
+
         // *************************************************************************************
         // FUNCTIONS TO APPLY NOTIFICATIONS FROM PROGRAM ***************************************
 
@@ -1011,6 +1065,7 @@
 
                 const ps = document.querySelector('parameter-settings');
                 if (ps) ps.updateForEmitter(changeReceived);
+                updateDynamicControls();
             }
 
             // Flow selection receipt (20-39)
@@ -1021,6 +1076,7 @@
 
                 const ps = document.querySelector('parameter-settings');
                 if (ps) ps.updateForFlow(flowIdx);
+                updateDynamicControls();
             }
 
         }

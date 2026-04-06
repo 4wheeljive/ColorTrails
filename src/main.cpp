@@ -23,7 +23,7 @@ extern "C" bool btStarted() { return false; }
 //#include "LittleFS.h"
 //#define FORMAT_LITTLEFS_IF_FAILED true
 
-bool debug = true;
+bool debug = false;
 bool audioEnabled = false;
 bool audioLatencyDiagnostics = false;
 
@@ -34,60 +34,16 @@ bool audioLatencyDiagnostics = false;
 #endif
 */
 
-#define BIG_BOARD
-//#undef BIG_BOARD
+#include "board_config.h"
 
-//*********************************************
-
-#ifdef BIG_BOARD
-
-	/*
-	#include "reference/matrixMap_32x48_3pin.h"
-	#define PIN0 2
-	#define PIN1 3
-    #define PIN2 4
-    #define HEIGHT 32
-    #define WIDTH 48
-    #define NUM_STRIPS 3
-    #define NUM_LEDS_PER_STRIP 512
-	*/
-
-	///*
-	#include "reference/matrixMap_48x64_6pin.h"
-	#define PIN0 5
-	#define PIN1 49
-    #define PIN2 50
-	#define PIN3 4 
-	#define PIN4 3
-	#define PIN5 2
-    #define HEIGHT 48
-    #define WIDTH 64
-    #define NUM_STRIPS 6
-    #define NUM_LEDS_PER_STRIP 512
-	//*/
-
-#else
-
-	#include "reference/matrixMap_22x22.h"
-	#define PIN0 2
-	#define HEIGHT 22
-    #define WIDTH 22
-    #define NUM_STRIPS 1
-    #define NUM_LEDS_PER_STRIP 484
-
-#endif
-
-//*********************************************
-
-#define NUM_LEDS ( WIDTH * HEIGHT )
 const uint16_t MIN_DIMENSION = FL_MIN(WIDTH, HEIGHT);
 const uint16_t MAX_DIMENSION = FL_MAX(WIDTH, HEIGHT);
 
 fl::CRGB leds[NUM_LEDS];
 uint16_t ledNum = 0;
 
-//bleControl variables ***********************************************************************
-//elements that must be set before #include "bleControl.h"
+// ***************************************************************************************
+// elements that must be set before #include "bleControl.h"
 
 uint8_t EMITTER = 0;
 uint8_t FLOW = 0;  // FLOW_NOISE; declared before enum is in scope
@@ -96,14 +52,16 @@ uint8_t BRIGHTNESS = 35;
 uint8_t defaultMapping = 0;
 bool mappingOverride = false;
 
-//#include "audio/audioInput.h"
-//#include "audio/audioProcessing.h"
+#ifdef AUDIO_ENABLED
+#include "audio/audioInput.h"
+#include "audio/audioProcessing.h"
+#endif
 #include "bleControl.h"
-#include "flowFields.hpp"
+#include "flowFieldsEngine.hpp"
 
 using namespace fl;
 
-// MAPPINGS **********************************************************************************
+// MAPPINGS *****************************************************************************
 
 extern const uint16_t progTopDown[NUM_LEDS] PROGMEM;
 extern const uint16_t progBottomUp[NUM_LEDS] PROGMEM;
@@ -140,7 +98,7 @@ void setup() {
 	Serial.setTxTimeoutMs(1);  // 1ms timeout — avoids unsigned underflow
 	delay(1000);
 
-	FastLED.setExclusiveDriver("PARLIO");
+	FastLED.setExclusiveDriver(LED_DRIVER);
 
 	FastLED.addLeds<WS2812B, PIN0, GRB>(leds, 0, NUM_LEDS_PER_STRIP)
 		.setCorrection(TypicalLEDStrip);
@@ -189,10 +147,12 @@ void setup() {
 	Serial.println("LittleFS mounted successfully.");
 	*/
 
-	/*if (audioEnabled){
+#ifdef AUDIO_ENABLED
+	if (audioEnabled){
 		myAudio::initAudioInput();
 		myAudio::initAudioProcessing();
-	}*/
+	}
+#endif
 
 }
 
@@ -208,13 +168,15 @@ void loop() {
 	// newest. When captureAudioFrame() calls it again later (inside
 	// the pattern), readAll() returns 0 and the already-captured data
 	// is preserved and reused for FFT/bus processing.
-	/*if (audioEnabled) {
+#ifdef AUDIO_ENABLED
+	if (audioEnabled) {
 		if (myAudio::audioInputInitialized) {
 			//PROFILE_START("audio_capture");
 			myAudio::sampleAudio();
 			//PROFILE_END();
 		}
-	}*/
+	}
+#endif
 
 	EVERY_N_SECONDS(3) {
 		uint8_t fps = FastLED.getFPS();

@@ -1,33 +1,19 @@
 #pragma once
 
-//=====================================================================================
-//  NOTE: Flow Fields was initially called Color Trails. 
-//  It will take a little time to get everything renamed internally.  
-//
-//  colortrails began with a FastLED Reddit post by u/StefanPetrick:
-//  https://www.reddit.com/r/FastLED/comments/1rny5j3/i_used_codex_for_the_first_time/
-//
-//  I had Claude help me port it to a C++ Arduino/FastLED-friendly sketch and then
-//  (2) implement that as a new "colorTrails" program in my AuroraPortal playground:
-//  https://github.com/4wheeljive/AuroraPortal
-//
-//  As Stefan has shared subsequent ideas, I've been implementing them in colorTrails.
-//
-//  It quickly became clear that we were going to want to do things with colorTrails
-//  that would be difficult if it was structured as just one of AuroraPortal's dozen
-//  or so visualizer programs. So I cloned my AuroraPortal repo to this project,
-//  stripped away all of the other programs, and have started redoing the architecture,
-//  from the C++ core out to the web UI, to best keep up with Stefan's fount of ideas.
-//
-//=====================================================================================
 
 #include "bleControl.h"
 #include "flowFieldsTypes.h"
 #include "flows/flow_noise.h"
-#include "flows/flow_fromCenter.h"
+#include "flows/flow_radial.h"
 #include "flows/flow_directional.h"
 #include "flows/flow_rings.h"
-#include "emitters.h"
+#include "emitters/emitters_other.h"
+#include "emitters/emitter_orbitalDots.h"
+#include "emitters/emitter_swarmingDots.h"
+#include "emitters/emitter_lissajousLine.h"
+#include "emitters/emitter_noiseKaleido.h"
+#include "emitters/emitter_cube.h"
+#include "flows/flow_spiral.h"
 #include "modulators.h"
 
 namespace flowFields {
@@ -43,20 +29,23 @@ namespace flowFields {
         emitLissajousLine,
         emitRainbowBorder,
         emitNoiseKaleido,
+        emitCube,
     };
 
     const FlowPrepFn FLOW_PREPARE[] = {
         noiseFlowPrepare,
-        fromCenterPrepare,
+        radialPrepare,
         directionalPrepare,
         ringFlowPrepare,
+        spiralPrepare,
     };
 
     const FlowAdvectFn FLOW_ADVECT[] = {
         noiseFlowAdvect,
-        fromCenterAdvect,
+        radialAdvect,
         directionalAdvect,
         ringFlowAdvect,
+        spiralAdvect,
     };
 
     constexpr uint8_t FLOW_DISPATCH_COUNT = sizeof(FLOW_PREPARE) / sizeof(FLOW_PREPARE[0]);
@@ -114,10 +103,11 @@ namespace flowFields {
                 cModShiftLevel = noiseFlow.modShift.modLevel;
                 break;
             }
-            case FLOW_FROMCENTER: {
-                fromCenter = FromCenterParams{};
-                cRadialStep = fromCenter.radialStep;
-                cBlendFactor = fromCenter.blendFactor;
+            case FLOW_RADIAL: {
+                radial = RadialParams{};
+                cRadialStep = radial.radialStep;
+                cBlendFactor = radial.blendFactor;
+                cOutward = radial.outward;
                 break;
             }
             case FLOW_DIRECTIONAL: {
@@ -137,6 +127,14 @@ namespace flowFields {
                 cMidDrift = ringFlow.midDrift;
                 cModBreatheRate = ringFlow.modBreathe.modRate;
                 cModBreatheLevel = ringFlow.modBreathe.modLevel;
+                break;
+            }
+            case FLOW_SPIRAL: {
+                spiral = SpiralParams{};
+                cAngularStep = spiral.angularStep;
+                cRadialStep = spiral.radialStep;
+                cBlendFactor = spiral.blendFactor;
+                cOutward = spiral.outward;
                 break;
             }
             default: break;
@@ -160,9 +158,10 @@ namespace flowFields {
         noiseFlow.modSpeed.modLevel = cModSpeedLevel;
         noiseFlow.modShift.modRate = cModShiftRate;
         noiseFlow.modShift.modLevel = cModShiftLevel;
-        // From-center flow
-        fromCenter.radialStep = cRadialStep;
-        fromCenter.blendFactor = cBlendFactor;
+        // Radial flow
+        radial.radialStep = cRadialStep;
+        radial.blendFactor = cBlendFactor;
+        radial.outward = cOutward;
         // Directional flow
         directional.windStep = cWindStep;
         directional.blendFactor = cBlendFactor;
@@ -176,6 +175,11 @@ namespace flowFields {
         ringFlow.midDrift = cMidDrift;
         ringFlow.modBreathe.modRate = cModBreatheRate;
         ringFlow.modBreathe.modLevel = cModBreatheLevel;
+        // Spiral flow
+        spiral.angularStep = cAngularStep;
+        spiral.radialStep = cRadialStep;
+        spiral.blendFactor = cBlendFactor;
+        spiral.outward = cOutward;
     }
 
     // Push emitter + universal defaults into cVars (called on emitter/mode change)
@@ -195,6 +199,8 @@ namespace flowFields {
         // Emitter: swarmingDots
         cSwarmSpeed = swarmingDots.swarmSpeed;
         cSwarmSpread = swarmingDots.swarmSpread;
+        cModSwarmSpeedRate = swarmingDots.modSwarmSpeed.modRate;
+        cModSwarmSpeedLevel = swarmingDots.modSwarmSpeed.modLevel;
         cModSwarmSpreadRate = swarmingDots.modSwarmSpread.modRate;
         cModSwarmSpreadLevel = swarmingDots.modSwarmSpread.modLevel;
         // Emitter: lissajous / borderRect
@@ -207,6 +213,14 @@ namespace flowFields {
         cNoiseScale = noiseKaleido.noiseScale;
         cNoiseBand = noiseKaleido.noiseBand;
         cKaleidoGamma = noiseKaleido.kaleidoGamma;
+        // Emitter: cube
+        cScale = cube.scale;
+        cAngleRateX = cube.angleRate[0];
+        cAngleRateY = cube.angleRate[1];
+        cAngleRateZ = cube.angleRate[2];
+        cAngleFreezeX = cube.angleFreeze[0];
+        cAngleFreezeY = cube.angleFreeze[1];
+        cAngleFreezeZ = cube.angleFreeze[2];
     }
 
     // Read cVars into component structs (called every frame)
@@ -224,6 +238,8 @@ namespace flowFields {
         swarmingDots.numDots = cNumDots;
         swarmingDots.swarmSpeed = cSwarmSpeed;
         swarmingDots.swarmSpread = cSwarmSpread;
+        swarmingDots.modSwarmSpeed.modRate = cModSwarmSpeedRate;
+        swarmingDots.modSwarmSpeed.modLevel = cModSwarmSpeedLevel;
         swarmingDots.modSwarmSpread.modRate = cModSwarmSpreadRate;
         swarmingDots.modSwarmSpread.modLevel = cModSwarmSpreadLevel;
         swarmingDots.dotDiam = cDotDiam;
@@ -235,6 +251,13 @@ namespace flowFields {
         noiseKaleido.noiseScale = cNoiseScale;
         noiseKaleido.noiseBand = cNoiseBand;
         noiseKaleido.kaleidoGamma = cKaleidoGamma;
+        cube.scale = cScale;
+        cube.angleRate[0] = cAngleRateX;
+        cube.angleRate[1] = cAngleRateY;
+        cube.angleRate[2] = cAngleRateZ;
+        cube.angleFreeze[0] = cAngleFreezeX;
+        cube.angleFreeze[1] = cAngleFreezeY;
+        cube.angleFreeze[2] = cAngleFreezeZ;
         // Flow field + modulator
         syncFlowFromCVars();
     }

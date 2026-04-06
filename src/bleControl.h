@@ -1,19 +1,16 @@
 #pragma once
 
 #include "FastLED.h"
-
 #include <ArduinoJson.h>
-
-/* If you use more than ~4 characteristics, you need to increase numHandles in this file:
-C:\Users\...\.platformio\packages\framework-arduinoespressif32\libraries\BLE\src\BLEServer.h
-Setting numHandles = 60 has worked for 7 characteristics.  
-*/
-
 #include <NimBLEDevice.h>
 
 #include <string>
 
-#include "hosted_ble_bridge.h"
+#if __has_include("hosted_ble_bridge.h")
+    #include "hosted_ble_bridge.h"
+#else
+    static inline bool hostedBlePrepare() { return true; }
+#endif
 #include "componentEnums.h"
 
 //#include <FS.h>
@@ -32,7 +29,9 @@ BusParamGetterFn getBusParam = nullptr;
 extern uint8_t EMITTER;
 extern uint8_t FLOW;
 
-// GLOBAL PARAMETERS *******************************
+// ═══════════════════════════════════════════════════════════════════
+// GLOBAL PARAMETERS
+// ═══════════════════════════════════════════════════════════════════
 
 const char* const GLOBAL_PARAMS[] PROGMEM = {
    "persistence", "colorShift"
@@ -40,7 +39,9 @@ const char* const GLOBAL_PARAMS[] PROGMEM = {
 
 const uint8_t GLOBAL_PARAM_COUNT = 2;
 
-// EMITTERS ****************************************
+// ═══════════════════════════════════════════════════════════════════
+//  EMITTERS
+// ═══════════════════════════════════════════════════════════════════
 
 // Emitter names in PROGMEM
 const char orbitaldots_str[] PROGMEM = "orbitaldots";
@@ -49,13 +50,13 @@ const char audiodots_str[] PROGMEM = "audiodots";
 const char lissajous_str[] PROGMEM = "lissajous";
 const char borderrect_str[] PROGMEM = "borderrect";
 const char noisekaleido_str[] PROGMEM = "noisekaleido";
-
+const char cube_str[] PROGMEM = "cube";
 
 const char* const EMITTERS[] PROGMEM = {
-      orbitaldots_str, swarmingdots_str, audiodots_str, lissajous_str, borderrect_str, noisekaleido_str
+      orbitaldots_str, swarmingdots_str, audiodots_str, lissajous_str, borderrect_str, noisekaleido_str, cube_str
    };
 
-const uint8_t EMITTER_COUNTS[] = {6};
+const uint8_t EMITTER_COUNTS[] = {7};
 
 // Emitter params
 const char* const ORBITALDOTS_PARAMS[] PROGMEM = {
@@ -64,6 +65,7 @@ const char* const ORBITALDOTS_PARAMS[] PROGMEM = {
 };
 const char* const SWARMINGDOTS_PARAMS[] PROGMEM = {
    "numDots", "dotDiam", "swarmSpeed", "swarmSpread",
+   "modSwarmSpeedRate", "modSwarmSpeedLevel",
    "modSwarmSpreadRate", "modSwarmSpreadLevel"
 };
 const char* const AUDIODOTS_PARAMS[] PROGMEM = {};
@@ -73,6 +75,9 @@ const char* const LISSAJOUS_PARAMS[] PROGMEM = {
 const char* const BORDERRECT_PARAMS[] PROGMEM = {};
 const char* const NOISEKALEIDO_PARAMS[] PROGMEM = {
    "driftSpeed", "noiseScale", "noiseBand", "kaleidoGamma"
+};
+const char* const CUBE_PARAMS[] PROGMEM = {
+   "scale", "angleRateX", "angleRateY", "angleRateZ"
 };
 
 // Struct to hold emitter name and parameter array reference
@@ -84,11 +89,12 @@ struct EmitterParamEntry {
 
 const EmitterParamEntry EMITTER_PARAM_LOOKUP[] PROGMEM = {
    {"orbitaldots", ORBITALDOTS_PARAMS, 8},
-   {"swarmingdots", SWARMINGDOTS_PARAMS, 6},
+   {"swarmingdots", SWARMINGDOTS_PARAMS, 8},
    {"audiodots", AUDIODOTS_PARAMS, 0},
    {"lissajous", LISSAJOUS_PARAMS, 4},
    {"borderrect", BORDERRECT_PARAMS, 0},
    {"noisekaleido", NOISEKALEIDO_PARAMS, 4},
+   {"cube", CUBE_PARAMS, 4},
 };
 
 static const EmitterParamEntry* getEmitterParams(uint8_t emitterIdx) {
@@ -96,18 +102,21 @@ static const EmitterParamEntry* getEmitterParams(uint8_t emitterIdx) {
       return &EMITTER_PARAM_LOOKUP[emitterIdx];
 }
 
-// FLOW FIELDS ****************************************
+// ═══════════════════════════════════════════════════════════════════
+//  FLOWS
+// ═══════════════════════════════════════════════════════════════════
 
 // Flow names in PROGMEM
 const char noise_str[] PROGMEM = "noise";
-const char fromcenter_str[] PROGMEM = "fromcenter";
+const char radial_str[] PROGMEM = "radial";
 const char directional_str[] PROGMEM = "directional";
 const char rings_str[] PROGMEM = "rings";
+const char spiral_str[] PROGMEM = "spiral";
 
-const uint8_t FLOW_COUNTS[] = {4};
+const uint8_t FLOW_COUNTS[] = {5};
 
 const char* const FLOWS[] PROGMEM = {
-      noise_str, fromcenter_str, directional_str, rings_str
+      noise_str, radial_str, directional_str, rings_str, spiral_str
    };
    
 // Flow field params
@@ -117,7 +126,7 @@ const char* const NOISE_PARAMS[] PROGMEM = {
    "modSpeedRate", "modSpeedLevel",
    "modShiftRate", "modShiftLevel"
 };
-const char* const FROM_CENTER_PARAMS[] PROGMEM = {
+const char* const RADIAL_PARAMS[] PROGMEM = {
    "radialStep", "blendFactor"
 };
 const char* const DIRECTIONAL_PARAMS[] PROGMEM = {
@@ -127,6 +136,10 @@ const char* const RINGS_PARAMS[] PROGMEM = {
    "innerSwirl", "outerSwirl", "midDrift",
    "modBreatheRate", "modBreatheLevel"
 };
+const char* const SPIRAL_PARAMS[] PROGMEM = {
+   "angularStep", "radialStep", "blendFactor"
+};
+// Note: spiral reuses shared cVars radialStep and blendFactor
 
 // Struct to hold flow field name and parameter array reference
 struct FlowParamEntry {
@@ -137,9 +150,10 @@ struct FlowParamEntry {
 
 const FlowParamEntry FLOW_PARAM_LOOKUP[] PROGMEM = {
    {"noise", NOISE_PARAMS, 14},
-   {"fromcenter", FROM_CENTER_PARAMS, 2},
+   {"radial", RADIAL_PARAMS, 2},
    {"directional", DIRECTIONAL_PARAMS, 6},
-   {"rings", RINGS_PARAMS, 5}
+   {"rings", RINGS_PARAMS, 5},
+   {"spiral", SPIRAL_PARAMS, 3}
 };
 
 static const FlowParamEntry* getFlowParams(uint8_t flowIdx) {
@@ -147,8 +161,10 @@ static const FlowParamEntry* getFlowParams(uint8_t flowIdx) {
       return &FLOW_PARAM_LOOKUP[flowIdx];
 }
 
-// AUDIO SETTINGS ==================================================
-
+// ═══════════════════════════════════════════════════════════════════
+// AUDIO SETTINGS
+// ═══════════════════════════════════════════════════════════════════
+ 
 const char* const AUDIO_PARAMS[] PROGMEM = {
 "maxBins", "audioFloor", "audioGain",
 "avLevelerTarget", "autoFloorAlpha", "autoFloorMin", "autoFloorMax",
@@ -159,8 +175,9 @@ const char* const AUDIO_PARAMS[] PROGMEM = {
 
 const uint8_t AUDIO_PARAM_COUNT = 15;
 
-   
-// Parameter control *************************************************************************************
+// ═══════════════════════════════════════════════════════════════════
+//  MISCELLANEOUS CONTROLS
+// ═══════════════════════════════════════════════════════════════════
 
 uint8_t cBright = 35;
 uint8_t cMapping = 0;
@@ -186,14 +203,95 @@ uint8_t cOverrideMapping = 0;
 uint8_t cEaseSat = 0;
 uint8_t cEaseLum = 0;
 
-// PARAMETER CONTROLS ==================================================================
+// ═══════════════════════════════════════════════════════════════════
+//  PARAMETER DECLARATIONS
+// ═══════════════════════════════════════════════════════════════════
 
-// Audio
+// GLOBAL -------------------------
+float cPersistence = 0.05f;
+float cColorShift = 0.10f;
+bool cUseRainbow = false;
+
+// EMITTERS -----------------------
+
+// Dot family shared ------
+uint8_t cNumDots = 3;
+float cDotDiam = 1.5f;
+// orbitalDots 
+float cOrbitSpeed = 0.15f;
+float cOrbitDiam = 10.0f;
+float cModOrbitSpeedRate = 0.00005f;
+float cModOrbitSpeedLevel = 1.0f;
+float cModOrbitDiamRate = 0.0005f;
+float cModOrbitDiamLevel = 1.0f;
+// swarmingDots
+float cSwarmSpeed = 0.5f;
+float cSwarmSpread = 0.5f;
+float cModSwarmSpeedRate = 1.0f;
+float cModSwarmSpeedLevel = 0.0f;
+float cModSwarmSpreadRate = 1.0f;
+float cModSwarmSpreadLevel = 1.0f;
+// lissajous line
+float cLineSpeed = 0.35f;
+float cLineAmp = 13.5f;
+float cModLineSpeedRate = 1.0f;
+float cModLineSpeedLevel = 0.0f;
+//noiseKaleido
+float cDriftSpeed = 0.35f;
+float cNoiseScale = 0.0375f;
+float cNoiseBand = 0.1f;
+float cKaleidoGamma = 0.65f;
+// cube
+float cScale = 1.f;
+float cAngleRateX = 0.02f;
+float cAngleRateY = 0.03f;
+float cAngleRateZ = 0.01f;
+bool cAngleFreezeX = false;
+bool cAngleFreezeY = false;
+bool cAngleFreezeZ = false;
+
+// FLOWS -----------------------
+// shared
+float cBlendFactor = 0.45f;
+// noiseFlow 
+float cXFreq = 0.33f;
+float cYFreq = 0.32f;
+float cXShift = 1.5f;
+float cYShift = 1.5f;
+float cXAmp = 1.0f;
+float cYAmp = 1.0f;
+float cXSpeed = 0.15f;
+float cYSpeed = 0.15f;
+float cModAmpRate = 0.5f;
+float cModAmpLevel = 0.5f;
+float cModSpeedRate = 0.1f;
+float cModSpeedLevel = 0.1f;
+float cModShiftRate = 0.5f;
+float cModShiftLevel = 0.5f;
+//flowFromCenter
+float cRadialStep = 0.15f;
+// directionalFlow
+float cWindStep = 0.95f;
+float cRotateSpeed = 0.25f;
+float cWaveAmp = 0.0f;
+float cWaveFreq = 0.20f;
+float cWaveSpeed = 1.20f;
+// ringFlow
+float cInnerSwirl = -0.2f;
+float cOuterSwirl = 0.2f;
+float cMidDrift = 0.3f;
+float cModBreatheRate = 1.0f;
+float cModBreatheLevel = 1.0f;
+// spiral
+float cAngularStep = 0.28f;
+bool cOutward = false;
+
+// AUDIO -----------------------
 bool maxBins = false;
 uint16_t cNoiseGateOpen = 70;
 uint16_t cNoiseGateClose = 50;
-float cAudioGain = 1.0f;      // Unified gain (internally maps to level × GAIN_SCALE_LEVEL, FFT × GAIN_SCALE_FFT)
-float cAudioFloor = 0.0f;     // Unified audio floor (internally maps to level × 0.05, FFT × 0.3)
+float cAudioGain = 1.0f; 
+float cAudioFloor = 0.0f;
 bool autoFloor = false;
 float cAutoFloorAlpha = 0.01f;
 float cAutoFloorMin = 0.0f;
@@ -207,63 +305,11 @@ float cRampDecay = 100.f;
 float cPeakBase = 1.0f;
 float cExpDecayFactor = 0.9f;
 
-//ColorTrails
-float cPersistence = 0.05f;
-bool cUseRainbow = false;
-float cXFreq = 0.33f;
-float cYFreq = 0.32f;
-float cOrbitSpeed = 0.15f;
-float cModOrbitSpeedRate = 0.00005f;
-float cModOrbitSpeedLevel = 1.0f;
-float cModOrbitDiamRate = 0.0005f;
-float cModOrbitDiamLevel = 1.0f;
-float cXShift = 1.5f;
-float cYShift = 1.5f;
-float cOrbitDiam = 10.0f;
-float cColorSpeed = 0.10f;
-uint8_t cNumDots = 3;
-float cDotDiam = 1.5f;
-float cSwarmSpeed = 0.5f;
-float cSwarmSpread = 0.5f;
-float cModSwarmSpreadRate = 1.0f;
-float cModSwarmSpreadLevel = 1.0f;
-float cLineSpeed = 0.35f;
-float cModLineSpeedRate = 1.0f;
-float cModLineSpeedLevel = 0.0f;
-float cDriftSpeed = 0.35f;
-float cNoiseScale = 0.0375f;
-float cNoiseBand = 0.1f;
-float cKaleidoGamma = 0.65f;
-float cColorShift = 0.10f;
-float cLineAmp = 13.5f;
-float cXAmp = 1.0f;
-float cYAmp = 1.0f;
-float cXSpeed = 0.15f;
-float cYSpeed = 0.15f;
-float cModAmpRate = 0.5f;
-float cModAmpLevel = 0.5f;
-float cModSpeedRate = 0.1f;
-float cModSpeedLevel = 0.1f;
-float cModShiftRate = 0.5f;
-float cModShiftLevel = 0.5f;
-float cRadialStep = 0.15f;
-float cBlendFactor = 0.45f;
-float cWindStep = 0.95f;
-float cRotateSpeed = 0.25f;
-float cWaveAmp = 0.0f;
-float cWaveFreq = 0.20f;
-float cWaveSpeed = 1.20f;
-float cInnerSwirl = -0.2f;
-float cOuterSwirl = 0.2f;
-float cMidDrift = 0.3f;
-float cModBreatheRate = 1.0f;
-float cModBreatheLevel = 1.0f;
-
 ArduinoJson::JsonDocument sendDoc;
 ArduinoJson::JsonDocument receivedJSON;
 
-//*******************************************************************************
-//BLE CONFIGURATION *************************************************************
+//*************************************************************************************
+//BLE CONFIGURATION *******************************************************************
 
 NimBLEServer* pServer = NULL;
 NimBLECharacteristic* pButtonCharacteristic = NULL;
@@ -282,8 +328,8 @@ bool wasConnected = false;
 #define STRING_CHARACTERISTIC_UUID     "19b10004-e8f2-537e-4f6c-d104768a1214"
 
 
-//*******************************************************************************
-// CONTROL FUNCTIONS ************************************************************
+//*************************************************************************************
+// CONTROL FUNCTIONS ******************************************************************
 
 // UI update functions ***********************************************
 
@@ -360,7 +406,7 @@ void sendReceiptString(String receivedID, String receivedValue) {
    }
 }
 
-//***********************************************************************
+//*****************************************************************************
 // PARAMETER/PRESET MANAGEMENT SYSTEM ("PPMS")
 // X-Macro table 
 #define PARAMETER_TABLE \
@@ -388,11 +434,12 @@ void sendReceiptString(String receivedID, String receivedValue) {
    X(float, ModOrbitSpeedLevel, 1.0f) \
    X(float, ModOrbitDiamRate, 0.0005f) \
    X(float, ModOrbitDiamLevel, 1.0f) \
-   X(float, ColorSpeed, 0.10f) \
    X(uint8_t, NumDots, 3) \
    X(float, DotDiam, 1.5f) \
    X(float, SwarmSpeed, 0.5f) \
    X(float, SwarmSpread, 0.5f) \
+   X(float, ModSwarmSpeedRate, 1.0f) \
+   X(float, ModSwarmSpeedLevel, 0.0f) \
    X(float, ModSwarmSpreadRate, 1.0f) \
    X(float, ModSwarmSpreadLevel, 1.0f) \
    X(float, LineSpeed, 0.35f) \
@@ -427,7 +474,16 @@ void sendReceiptString(String receivedID, String receivedValue) {
    X(float, OuterSwirl, 0.24f) \
    X(float, MidDrift, 0.42f) \
    X(float, ModBreatheRate, 1.0f) \
-   X(float, ModBreatheLevel, 1.0f)
+   X(float, ModBreatheLevel, 1.0f) \
+   X(float, Scale, 1.0f) \
+   X(float, AngleRateX, 0.02f) \
+   X(float, AngleRateY, 0.03f) \
+   X(float, AngleRateZ, 0.01f) \
+   X(bool, AngleFreezeX, false) \
+   X(bool, AngleFreezeY, false) \
+   X(bool, AngleFreezeZ, false) \
+   X(float, AngularStep, 0.28f) \
+   X(bool, Outward, false)
 
 
 // Auto-generated helper functions using X-macros
@@ -837,8 +893,7 @@ void processButton(uint8_t receivedValue) {
        }
    }*/
 
-   //fxWave2d, animartrix
-   //if (receivedValue == 160) { fancyTrigger = true; }
+   //if (receivedValue == 160) { Trigger = true; }
    
 }
 
@@ -890,6 +945,11 @@ void processCheckbox(String receivedID, bool receivedValue ) {
    
    if (receivedID == "cx11") {mappingOverride = receivedValue;};
 
+   if (receivedID == "cx21") {cAngleFreezeX = receivedValue;};
+   if (receivedID == "cx22") {cAngleFreezeY = receivedValue;};
+   if (receivedID == "cx23") {cAngleFreezeZ = receivedValue;};
+
+   if (receivedID == "cx31") {cOutward = receivedValue;};
    if (receivedID == "cx32") {cUseRainbow = receivedValue;};
 
 }
@@ -919,9 +979,9 @@ void processString(String receivedID, String receivedValue ) {
    class ButtonCharacteristicCallbacks : public NimBLECharacteristicCallbacks {
       void onWrite(NimBLECharacteristic *pCharacteristic, NimBLEConnInfo& connInfo) override {
 
-          NimBLEAttValue value = pCharacteristic->getValue();
-         if (value.length() > 0) {
-            
+         NimBLEAttValue value = pCharacteristic->getValue();
+         if (value.size() > 0) {
+
             uint8_t receivedValue = value[0];
             
             if (debug) {
@@ -1074,8 +1134,6 @@ void bleSetup() {
       
 
       //**********************************************************
-
-      //pService->start();
 
       pAdvertising = NimBLEDevice::getAdvertising();
       pAdvertising->addServiceUUID(SERVICE_UUID);
