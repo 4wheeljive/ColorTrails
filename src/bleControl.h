@@ -919,7 +919,7 @@ void processString(String receivedID, String receivedValue ) {
    class ButtonCharacteristicCallbacks : public NimBLECharacteristicCallbacks {
       void onWrite(NimBLECharacteristic *pCharacteristic, NimBLEConnInfo& connInfo) override {
 
-         String value = String(pCharacteristic->getValue().c_str());
+          NimBLEAttValue value = pCharacteristic->getValue();
          if (value.length() > 0) {
             
             uint8_t receivedValue = value[0];
@@ -1075,7 +1075,7 @@ void bleSetup() {
 
       //**********************************************************
 
-      pService->start();
+      //pService->start();
 
       pAdvertising = NimBLEDevice::getAdvertising();
       pAdvertising->addServiceUUID(SERVICE_UUID);
