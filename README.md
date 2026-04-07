@@ -26,5 +26,54 @@ Each ColorFlowField follows its own different rules and can produce characterist
 - directional / geometric flows?
 - smoke/vapor?
 
+---------------------------------------------------------------------------------
+
+## Dual-Target Architecture
+
+FlowFields runs on two ESP32 platforms from a single codebase:
+
+| Target | Board | LED Driver | BLE | Build |
+|--------|-------|-----------|-----|-------|
+| **ESP32-S3** | Seeed XIAO ESP32S3 | RMT | On-chip | VSCode PlatformIO button |
+| **ESP32-P4** | Waveshare ESP32-P4-WIFI6 | PARLIO | Companion ESP32-C6 via ESP-Hosted VHCI over SDIO | CLI (see below) |
+
+### How It Works
+
+Both targets share all source files. Compile-time guards handle platform differences:
+- `#ifdef AUDIO_ENABLED` — audio capture and processing (S3 only)
+- `#if __has_include("hosted_ble_bridge.h")` — ESP-Hosted BLE init (P4 only)
+- `#if defined(CONFIG_IDF_TARGET_ESP32S3)` — S3-specific serial config
+- `src/board_config.h` — pin assignments, matrix dimensions, LED driver selection (`BIG_BOARD` toggle)
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `platformio.ini` | S3 config (loaded by VSCode) |
+| `platformio_p4.ini` | P4 config (CLI only) |
+| `sdkconfig.defaults` | ESP-IDF settings for P4 (ESP-Hosted, NimBLE, PSRAM, PARLIO) |
+| `src/board_config.h` | Hardware abstraction: pins, matrix size, LED driver |
+| `src/parameterSchema.h` | cVar declarations, PARAMETER_TABLE X-macro, component registries |
+| `src/bleControl.h` | NimBLE BLE transport, callbacks, state sync |
+| `src/hosted_ble_bridge.cpp/.h` | P4-specific ESP-Hosted BLE controller init |
+| `src/flowFieldsEngine.hpp` | Visualization pipeline: emitter/flow dispatch, rendering |
+
+### NimBLE Libraries
+
+The S3 and P4 use different NimBLE builds:
+- **S3**: `libNimBLE/NimBLE-Arduino-2.5.0` — Arduino-compatible wrapper
+- **P4**: `h2zero/esp-nimble-cpp @ 2.5.0` — ESP-IDF component (downloaded via lib_deps)
+
+### Building
+
+**S3** — Use the PlatformIO build/upload buttons in VSCode as normal.
+
+**P4** — Build from the terminal (PowerShell):
+```powershell
+$env:PLATFORMIO_PROJECT_CONF="platformio_p4.ini"
+C:/Users/Jeff/.platformio/penv/Scripts/pio.exe run -c platformio_p4.ini -t upload
+
+
+
 
 Copyright and licensing info to be added.
