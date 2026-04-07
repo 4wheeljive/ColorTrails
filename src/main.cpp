@@ -8,14 +8,6 @@ CREDITS:
 
 #include <Arduino.h>
 
-/*// ESP32-P4 has no on-chip BT controller (SOC_BT_SUPPORTED is undefined),
-// so the Arduino core doesn't compile btStarted(). esp-nimble-cpp calls it
-// when CONFIG_ENABLE_ARDUINO_DEPENDS is set (forced on by Arduino Kconfig).
-// Provide a stub — on P4, BT is hosted on the C6 via esp-hosted VHCI.
-#if defined(CONFIG_IDF_TARGET_ESP32P4) && !defined(SOC_BT_SUPPORTED)
-extern "C" bool btStarted() { return false; }
-#endif*/
-
 //#define FASTLED_OVERCLOCK 1.2
 #include <FastLED.h>
 
