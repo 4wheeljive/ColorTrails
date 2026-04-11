@@ -14,9 +14,12 @@ namespace myAudio {
     //   L/R pin LOW  (or GND) → outputs on Left channel
     //   L/R pin HIGH (or VCC) → outputs on Right channel
 
-    fl::audio::Config config = fl::audio::Config::CreateInmp441(
+    // ICS-43434 (successor to INMP441). FastLED provides a specific mic profile for it.
+    // Keep the sample rate at 44.1kHz for better low-frequency resolution at a given FFT size.
+    fl::audio::Config config = fl::audio::Config::CreateIcs43434(
         I2S_WS_PIN, I2S_SD_PIN, I2S_CLK_PIN,
-        fl::audio::AudioChannel::Left
+        fl::audio::AudioChannel::Left,
+        44100ul
     );
         
     fl::shared_ptr<fl::audio::IInput> audioSource;

@@ -33,7 +33,46 @@ namespace myAudio {
     // Auto AV leveling  — Robbins-Monro P90 ceiling estimation
     //=====================================================================
 
-    void updateAvLeveler(float level) {
+    void updateAvLeveler(float level, float dtMs) {
+        #if 0
+                // Legacy fixed-alpha version (pre-hybrid; FPS-dependent time feel)
+                if (!vizConfig.avLeveler) {
+                    avLevelerValue = 1.0f;
+                    return;
+                }
+
+                static float ceilingEstimate = 0.02f;
+                static bool prevGateOpen = false;
+
+                if (noiseGateOpen && !prevGateOpen) {
+                    ceilingEstimate = 0.02f;
+                    avLevelerValue = 1.0f;
+                }
+                prevGateOpen = noiseGateOpen;
+
+                if (!noiseGateOpen) return;
+
+                constexpr float targetPercentile = 0.90f;
+                constexpr float alpha = 0.12f;
+                if (level > ceilingEstimate) {
+                    ceilingEstimate += alpha * targetPercentile * (level - ceilingEstimate);
+                } else {
+                    ceilingEstimate += alpha * (1.0f - targetPercentile) * (level - ceilingEstimate);
+                }
+                ceilingEstimate = FL_MAX(ceilingEstimate, 0.0005f);
+                lastAutoGainCeil = ceilingEstimate;
+
+                float desired = vizConfig.avLevelerTarget / (ceilingEstimate * vizConfig.gainLevel);
+                desired = fl::clamp(desired, 0.1f, 8.0f);
+                lastAutoGainDesired = desired;
+
+                constexpr float levelerAttack  = 0.35f;
+                constexpr float levelerRelease = 0.10f;
+                float levelerAlpha = (desired > avLevelerValue) ? levelerAttack : levelerRelease;
+                avLevelerValue += levelerAlpha * (desired - avLevelerValue);
+                return;
+        #endif
+
         if (!vizConfig.avLeveler) {
             avLevelerValue = 1.0f;
             return;
@@ -61,17 +100,16 @@ namespace myAudio {
         if (!noiseGateOpen) return;
 
         constexpr float targetPercentile = 0.90f;
-        constexpr float alpha = 0.12f;  // upward effective: 0.108, downward effective: 0.012
+        constexpr float alphaRef = 0.12f;  // tuned at ~50ms; dt-corrected below
+        const float alpha = alphaFromRef(alphaRef, dtMs);  // upward effective: alpha*0.9, downward: alpha*0.1
 
         // Asymmetric proportional update: converges to the target quantile.
         // Above-P90 samples (rare, ~10%) push up with weight p to compensate;
         // below-P90 samples (common, ~90%) push down with weight (1-p).
         if (level > ceilingEstimate) {
             ceilingEstimate += alpha * targetPercentile * (level - ceilingEstimate);
-            // was: alpha * (1.0f - targetPercentile) — weights were swapped (tracked ~P10)
         } else {
             ceilingEstimate += alpha * (1.0f - targetPercentile) * (level - ceilingEstimate);
-            // was: alpha * targetPercentile — weights were swapped (tracked ~P10)
         }
         ceilingEstimate = FL_MAX(ceilingEstimate, 0.0005f);  // prevent collapse
         lastAutoGainCeil = ceilingEstimate;
@@ -83,9 +121,10 @@ namespace myAudio {
 
         // Asymmetric smoothing: fast up (react quickly to crescendos),
         // slow down (ride smoothly through quiet passages).
-        constexpr float levelerAttack  = 0.35f;  // fast rise
-        constexpr float levelerRelease = 0.10f;  // slow decay
-        float levelerAlpha = (desired > avLevelerValue) ? levelerAttack : levelerRelease;
+        constexpr float levelerAttackRef  = 0.35f;  // fast rise (ref dt)
+        constexpr float levelerReleaseRef = 0.10f;  // slow decay (ref dt)
+        const float levelerAlphaRef = (desired > avLevelerValue) ? levelerAttackRef : levelerReleaseRef;
+        const float levelerAlpha = alphaFromRef(levelerAlphaRef, dtMs);
         avLevelerValue += levelerAlpha * (desired - avLevelerValue);
         
     }
@@ -94,26 +133,86 @@ namespace myAudio {
     // Auto-floor — adaptive noise floor
     //=====================================================================
 
-    void updateAutoFloor(float level) {
+    void updateAutoFloor(float level, float dtMs) {
+        #if 0
+                // Legacy fixed-alpha version (pre-hybrid; did not persist across frames)
+                if (!vizConfig.autoFloor) {
+                    return;
+                }
+
+                if (level < (vizConfig.audioFloorLevel + 0.02f)) {
+                    float nf = vizConfig.audioFloorLevel * (1.0f - vizConfig.autoFloorAlpha)
+                            + level * vizConfig.autoFloorAlpha;
+                    vizConfig.audioFloorLevel = fl::clamp(nf, vizConfig.autoFloorMin, vizConfig.autoFloorMax);
+                }
+                return;
+        #endif
+
+        // Persist floor state across frames even though updateVizConfig() resets
+        // the *manual* floor each render frame.
+        static bool prevEnabled = false;
+        static float autoFloorLevel = 0.0f;
+
         if (!vizConfig.autoFloor) {
+            prevEnabled = false;
             return;
         }
 
-        // Only adapt when near the existing floor to avoid chasing loud signals.
-        if (level < (vizConfig.audioFloorLevel + 0.02f)) {
-            float nf = vizConfig.audioFloorLevel * (1.0f - vizConfig.autoFloorAlpha)
-                       + level * vizConfig.autoFloorAlpha;
-            vizConfig.audioFloorLevel = fl::clamp(nf, vizConfig.autoFloorMin, vizConfig.autoFloorMax);
+        if (!prevEnabled) {
+            // Seed from the current manual floor on enable.
+            autoFloorLevel = vizConfig.audioFloorLevel;
+            prevEnabled = true;
         }
+
+        // Only adapt when near the existing floor to avoid chasing loud signals.
+        if (level < (autoFloorLevel + 0.02f)) {
+            const float alpha = alphaFromRef(vizConfig.autoFloorAlpha, dtMs);
+            autoFloorLevel = autoFloorLevel * (1.0f - alpha) + level * alpha;
+            autoFloorLevel = fl::clamp(autoFloorLevel, vizConfig.autoFloorMin, vizConfig.autoFloorMax);
+        }
+
+        // Publish for the rest of this frame's computations.
+        vizConfig.audioFloorLevel = autoFloorLevel;
     }
 
     //=====================================================================
     // updateBus — per-band spectral flattening
     //=====================================================================
 
-    inline void updateBus(const AudioFrame& frame, const binConfig& b, Bus& bus) {
+    inline void updateBus(const AudioFrame& frame, const binConfig& b, Bus& bus, float dtMs) {
+        #if 0
+                // Legacy fixed-alpha version (pre-hybrid; cleared newBeat here)
+                bus.isActive = false;
+                bus.newBeat = false;
+
+                if (!frame.valid || !frame.fft_norm_valid) {
+                    bus.norm = 0.0f;
+                    bus.factor = 0.0f;
+                    return;
+                }
+
+                float sum = 0.0f;
+                uint8_t count = 0;
+                for (uint8_t i = 0; i < b.NUM_FFT_BINS; i++) {
+                    if (bin[i].bus == &bus) {
+                        sum += frame.fft_pre[i];
+                        count++;
+                    }
+                }
+
+                if (count > 0) { bus.isActive = true; }
+
+                float avg = (count > 0) ? (sum / static_cast<float>(count)) : 0.0f;
+
+                constexpr float eqAlpha = 0.02f;
+                bus.avgLevel += eqAlpha * (avg - bus.avgLevel);
+                bus.avgLevel = FL_MAX(bus.avgLevel, 0.0001f);
+
+                bus.norm = avg / bus.avgLevel;
+                return;
+        #endif
+
         bus.isActive = false;
-        bus.newBeat = false;
 
         if (!frame.valid || !frame.fft_norm_valid) {
             bus.norm = 0.0f;
@@ -134,9 +233,10 @@ namespace myAudio {
 
         float avg = (count > 0) ? (sum / static_cast<float>(count)) : 0.0f;
 
-        constexpr float eqAlpha = 0.02f;  // ~1-2 sec half-life
+        constexpr float eqAlphaRef = 0.02f;  // tuned at ~50ms (~20 FPS)
+        const float eqAlpha = alphaFromRef(eqAlphaRef, dtMs);  // ~1-2 sec half-life (time-stable)
         bus.avgLevel += eqAlpha * (avg - bus.avgLevel);
-        bus.avgLevel = FL_MAX(bus.avgLevel, 0.0001f);  // linear scale floor; tuned for FFT_MAX_FREQ=4000 (was 0.0001 at 5000/8000, 0.001 at 16000)
+        bus.avgLevel = FL_MAX(bus.avgLevel, 0.0001f);  // linear scale floor; tuned for FFT_MAX_FREQ=5000 (was 0.0001 at 5000/8000, 0.001 at 16000)
 
         // Store spectrally-flattened value (cross-cal and gain applied later)
         bus.norm = avg / bus.avgLevel;
@@ -146,7 +246,43 @@ namespace myAudio {
     // finalizeBus — beat detection + cross-calibration + gain
     //=====================================================================
 
-    inline void finalizeBus(const AudioFrame& frame, Bus& bus, float crossCalRatio, float gainApplied) {
+    inline void finalizeBus(const AudioFrame& frame, Bus& bus, float crossCalRatio, float gainApplied, float dtMs) {
+        #if 0
+                // Legacy fixed-alpha version (pre-hybrid; overwrote relativeIncrease every call)
+                bus.preNorm = bus.norm;
+                if (!bus.isActive) return;
+
+                float rawAvg = bus.preNorm * bus.avgLevel;
+                constexpr float minRawEnergy = 0.0002f;
+
+                constexpr float emaAlpha = 0.15f;
+                constexpr float emaWarmupFloor = 0.005f;
+                if (bus.energyEMA >= emaWarmupFloor && rawAvg >= minRawEnergy) {
+                    float increase = bus.preNorm - bus.energyEMA;
+                    bus.relativeIncrease = increase / bus.energyEMA;
+
+                    uint32_t now = frame.timestamp;
+                    if (bus.relativeIncrease > bus.threshold && (now - bus.lastBeat) > bus.minBeatInterval) {
+                        bus.newBeat = true;
+                        bus.lastBeat = now;
+                    }
+                } else {
+                    bus.relativeIncrease = 0.0f;
+                }
+
+                bus.energyEMA += emaAlpha * (bus.preNorm - bus.energyEMA);
+
+                bus.norm = fl::clamp(bus.norm * crossCalRatio * gainApplied, 0.0f, 1.0f);
+                constexpr float gamma = 0.5754f;
+                bus.factor = 2.0f * fl::powf(bus.norm, gamma);
+
+                constexpr float normAttack  = 0.35f;
+                constexpr float normRelease = 0.04f;
+                float normAlpha = (bus.norm > bus.normEMA) ? normAttack : normRelease;
+                bus.normEMA += normAlpha * (bus.norm - bus.normEMA);
+                return;
+        #endif
+
         // Capture pre-finalize norm (spectrally-flattened, before cross-cal/gain)
         bus.preNorm = bus.norm;
 
@@ -160,27 +296,32 @@ namespace myAudio {
         // fft_pre is now bins_raw/32768 (linear), so typical music signals
         // are ~0.01-0.10; harmonic bleed on quiet bins is <0.002.
         float rawAvg = bus.preNorm * bus.avgLevel;
-        constexpr float minRawEnergy = 0.0002f;  // tuned for FFT_MAX_FREQ=4000 (was 0.0002 at 5000/8000, 0.002 at 16000)
+        constexpr float minRawEnergy = 0.0002f;  // tuned for FFT_MAX_FREQ=5000 (was 0.0002 at 5000/8000, 0.002 at 16000)
 
         // --- Beat detection on pre-finalize norm so onset shape isn't distorted ---
-        // Compare current energy against EMA baseline (check BEFORE updating
-        // EMA so the onset spike isn't yet blended into the baseline).
+        // Compare current energy against EMA baseline (check BEFORE updating EMA so
+        // the onset spike isn't yet blended into the baseline).
+        //
+        // Hybrid/latch behavior:
+        // - bus.newBeat is latched across all drained buffers in this render frame
+        // - bus.relativeIncrease is latched to the strongest detected beat in this render frame
+        constexpr float emaAlphaRef = 0.15f;   // tuned at ~50ms (~20 FPS)
+        const float emaAlpha = alphaFromRef(emaAlphaRef, dtMs);
+
         // Skip beat detection until EMA has warmed up: avoids spurious beats at
         // startup and after silence (where avgLevel decays slower than energyEMA,
         // causing preNorm to recover to ~1.0 while EMA is still near zero).
-        constexpr float emaAlpha = 0.15f;   // ~6-7 frame half-life
-        constexpr float emaWarmupFloor = 0.005f;  // tuned for FFT_MAX_FREQ=4000 (was 0.005 at 5000/8000, 0.05 at 16000)
+        constexpr float emaWarmupFloor = 0.005f;  // tuned for FFT_MAX_FREQ=5000 (was 0.005 at 5000/8000, 0.05 at 16000)
         if (bus.energyEMA >= emaWarmupFloor && rawAvg >= minRawEnergy) {
             float increase = bus.preNorm - bus.energyEMA;
-            bus.relativeIncrease = increase / bus.energyEMA;
+            float rel = increase / bus.energyEMA;
 
             uint32_t now = frame.timestamp;
-            if (bus.relativeIncrease > bus.threshold && (now - bus.lastBeat) > bus.minBeatInterval) {
+            if (rel > bus.threshold && (now - bus.lastBeat) > bus.minBeatInterval) {
                 bus.newBeat = true;
                 bus.lastBeat = now;
+                bus.relativeIncrease = FL_MAX(bus.relativeIncrease, rel);
             }
-        } else {
-            bus.relativeIncrease = 0.0f;
         }
 
         // Update EMA after beat check (always runs so baseline tracks signal)
@@ -193,9 +334,10 @@ namespace myAudio {
         bus.factor = 2.0f * fl::powf(bus.norm, gamma);
 
         // --- Asymmetric EMA of normalized value (envelope follower) ---
-        constexpr float normAttack  = 0.35f;  //fast rise on spikes (orig 0.35)
-        constexpr float normRelease = 0.04f;  //slow decay (orig 0.04)
-        float normAlpha = (bus.norm > bus.normEMA) ? normAttack : normRelease;
+        constexpr float normAttackRef  = 0.35f;  // fast rise on spikes (ref dt)
+        constexpr float normReleaseRef = 0.04f;  // slow decay (ref dt)
+        const float normAlphaRef = (bus.norm > bus.normEMA) ? normAttackRef : normReleaseRef;
+        const float normAlpha = alphaFromRef(normAlphaRef, dtMs);
         bus.normEMA += normAlpha * (bus.norm - bus.normEMA);
     }
 
@@ -207,194 +349,471 @@ namespace myAudio {
         static AudioFrame frame;
         static uint32_t lastFftTimestamp = 0;
 
+        //=========================================================================
+        // Legacy implementation (kept, but disabled)
+        //=========================================================================
+        #if 0
+                // *** STAGE: set current AudioVizConfig parameters
+                updateVizConfig();
+
+                // *** STAGE: capture filtered audio sample
+                sampleAudio();
+
+                // getVocalConfidence()->update() runs inside audioProcessor.update() (called by sampleAudio),
+                // so getConfidence() is already current for this frame.
+                // audioProcessor.getVocalConfidence() outputs significant positive values even during silence;
+                //   so need to shut off getVocalConfidence() input when noiseGate is closed          
+                // FL vocal detector not used:   
+                // voxConf = noiseGateOpen ? audioProcessor.getVocalConfidence() : 0.0f;
+
+                // Gate-open transition: reset per-bus EMA state so that avgLevel (alpha=0.02,
+                // very slow) doesn't produce inflated _norm on the first beats after silence.
+                // Without this, avgLevel decays to ~0.01 during gate-closed silence, causing
+                // avg/avgLevel to spike to 10-40x for all buses equally when music resumes.
+                {
+                    static bool prevGateForBus = false;
+                    if (noiseGateOpen && !prevGateForBus) {
+                        const float kResetLevel = 0.001f;  // linear FFT scale; tuned for FFT_MAX_FREQ=5000 (was 0.001 at 5000/8000, 0.01 at 16000)
+                        busA.avgLevel = kResetLevel;  busA.energyEMA = 0.0f;
+                        busB.avgLevel = kResetLevel;  busB.energyEMA = 0.0f;
+                        busC.avgLevel = kResetLevel;  busC.energyEMA = 0.0f;
+                    }
+                    prevGateForBus = noiseGateOpen;
+                }
+
+                frame.valid = filteredSample.isValid();
+                frame.timestamp = currentSample.timestamp();
+                frame.pcm = filteredSample.pcm();
+
+                // *** STAGE: Run FFT engine once per timestamp
+                static const fl::audio::fft::Bins* lastFft = nullptr;
+                const fl::audio::fft::Bins* fftForBeat = nullptr;
+                float rmsNormFast = 0.0f;
+                float timeEnergy = 0.0f;
+                float beatBins[MAX_FFT_BINS] = {0.0f};
+                bool beatBinsValid = false;
+                float rmsPostFloor = 0.0f;
+                float rmsPostFloorFast = 0.0f; 
+                float gainAppliedLevel = 1.0f;
+                if (frame.valid) {
+                    if (frame.timestamp != lastFftTimestamp) {
+                        fftForBeat = getFFT(b);
+                        lastFftTimestamp = frame.timestamp;
+                        lastFft = fftForBeat;
+                    } else {
+                        fftForBeat = lastFft;
+                    }
+                    frame.rms_raw = filteredSample.rms(); // no temporal smoothing
+                    rmsNormFast = frame.rms_raw / 32768.0f;
+                    rmsNormFast = fl::clamp(rmsNormFast, 0.0f, 1.0f);
+                } else {
+                    frame.rms_raw = 0.0f;
+                }
+                frame.fft = fftForBeat;
+
+                // *** STAGE: Get frame RMS and calculate _norm and _factor values
+                frame.rms = getRMS(); // with temporal smoothing; currently used only for diagnostics
+                
+                if (frame.valid) {
+
+                    // Normalize RMS/peak and update auto-calibration
+                    float rmsNormRaw = frame.rms / 32768.0f; // with temporal smoothing
+                    rmsNormFast = frame.rms_raw / 32768.0f; // no temporal smoothing
+                    float peakNormRaw = frame.peak / 32768.0f;
+                    rmsNormRaw = fl::clamp(rmsNormRaw, 0.0f, 1.0f);
+                    rmsNormFast = fl::clamp(rmsNormFast, 0.0f, 1.0f);
+                    peakNormRaw = fl::clamp(peakNormRaw, 0.0f, 1.0f);
+
+                    updateAutoFloor(rmsNormRaw);
+                    updateAvLeveler(rmsNormRaw);
+                    // rmsPostFloor is currently computed but unused. You could remove it and the getRMS() call if nothing else
+                    // references them, but keeping them costs essentially nothing and they're useful for diagnostics.
+                    rmsPostFloor = FL_MAX(0.0f, rmsNormRaw - vizConfig.audioFloorLevel);
+
+                    timeEnergy = FL_MAX(0.0f, rmsNormFast - vizConfig.audioFloorLevel);
+
+                    // Fast RMS for bus cross-calibration: single asymmetric EMA of
+                    // unsmoothed RMS, bypassing the median+EMA cascade in getRMS().
+                    // Gives bus.norm/factor/normEMA ~2 frames less latency on onsets.
+                    static float rmsCrossCalEMA = 0.0f;
+                    constexpr float rmsCcAttack  = 0.6f;   // ~1 frame to 60% of onset
+                    constexpr float rmsCcRelease = 0.15f;  // ~4 frame half-life for decay
+                    float rmsCcAlpha = (rmsNormFast > rmsCrossCalEMA) ? rmsCcAttack : rmsCcRelease;
+                    rmsCrossCalEMA += rmsCcAlpha * (rmsNormFast - rmsCrossCalEMA);
+                    rmsPostFloorFast = FL_MAX(0.0f, rmsCrossCalEMA - vizConfig.audioFloorLevel);
+
+                    gainAppliedLevel = vizConfig.gainLevel * avLevelerValue;
+                    float gainAppliedFft = vizConfig.gainFft * avLevelerValue;
+
+                    frame.rms_norm = rmsNormRaw;
+                    frame.rms_norm = fl::clamp(FL_MAX(0.0f, frame.rms_norm - vizConfig.audioFloorLevel) * gainAppliedLevel, 0.0f, 1.0f);
+
+                    // rmsFactor: 0.0–2.0 multiplicative scale, 1.0 at neutralPoint
+                    constexpr float neutralPoint = 0.3f;
+                    constexpr float gamma = 0.5754f; // ln(0.5)/ln(0.3)
+                    frame.rms_factor = 2.0f * fl::powf(frame.rms_norm, gamma);
+
+                    // *** STAGE: Derive busses/bands from FFT bins (band boundaries set in binConfig),
+                    //            calculate _norm and _factor values
+                    frame.fft_norm_valid = false;
+                    //if (frame.fft && frame.fft->bins_db.size() > 0) {  // pre-FastLED API change
+                    if (frame.fft && frame.fft->db().size() > 0) {
+                        for (uint8_t i = 0; i < b.NUM_FFT_BINS; i++) {
+                            // --- Visualization path: dB-linear scale (perceptually uniform for display) ---
+                            float mag_db = 0.0f;
+                            //if (i < frame.fft->bins_db.size()) {  // pre-FastLED API change
+                            //    mag_db = frame.fft->bins_db[i] / 100.0f;
+                            if (i < frame.fft->db().size()) {
+                                mag_db = frame.fft->db()[i] / 100.0f;
+                            }
+                            mag_db = FL_MAX(0.0f, mag_db - vizConfig.audioFloorFft);
+                            frame.fft_norm[i] = fl::clamp(mag_db * gainAppliedFft, 0.0f, 1.0f);
+
+                            // --- Bus beat detection path: true linear amplitude ---
+                            // raw() is the Q15 linear magnitude; /32768 normalizes to [0, ~1].
+                            // A harmonic 30 dB below its fundamental is ~3% of it here,
+                            // vs ~30% in the dB-linear (/100) domain — far better harmonic
+                            // rejection for per-bus frequency discrimination.
+                            float mag_lin = 0.0f;
+                            //if (i < frame.fft->bins_raw.size()) {  // pre-FastLED API change
+                            //    mag_lin = frame.fft->bins_raw[i] / 32768.0f;
+                            if (i < frame.fft->raw().size()) {
+                                mag_lin = frame.fft->raw()[i] / 32768.0f;
+                            }
+                            frame.fft_pre[i] = fl::clamp(mag_lin, 0.0f, 1.0f);
+                        }
+                        for (uint8_t i = b.NUM_FFT_BINS; i < MAX_FFT_BINS; i++) {
+                            frame.fft_pre[i] = 0.0f;
+                            frame.fft_norm[i] = 0.0f;
+                        }
+                        frame.fft_norm_valid = true;
+
+                    } else { // if no valid fft data
+
+                        for (uint8_t i = 0; i < b.NUM_FFT_BINS; i++) {
+                            frame.fft_pre[i] = 0.0f;
+                            frame.fft_norm[i] = 0.0f;
+                        }
+                        frame.fft_norm_valid = false;
+                    }
+                } else { // if frame not valid
+                    frame.fft = nullptr;
+                    frame.fft_norm_valid = false;
+                    frame.rms_norm = 0.0f;
+                    //frame.peak_norm = 0.0f;
+                    for (uint8_t i = 0; i < b.NUM_FFT_BINS; i++) {
+                        frame.fft_pre[i] = 0.0f;
+                        frame.fft_norm[i] = 0.0f;
+                    }
+                }
+
+                if (b.busBased) {
+                
+                    // Update bus outputs (phase 1: compute spectrally-flattened values)
+                    updateBus(frame, b, busA);
+                    updateBus(frame, b, busB);
+                    updateBus(frame, b, busC);
+
+                    // Phase 2: Apply RMS-domain cross-calibration and gain for visualization.
+                    // Uses rmsPostFloorFast (asymmetric EMA of unsmoothed RMS) so bus
+                    // envelopes track onsets ~2 frames faster than the old median+EMA path.
+                    // In steady state, whitened _norm ≈ 1.0, so bus._norm ≈ crossCal * gain ≈ rms_norm.
+                    finalizeBus(frame, busA, rmsPostFloorFast, gainAppliedLevel);
+                    finalizeBus(frame, busB, rmsPostFloorFast, gainAppliedLevel);
+                    finalizeBus(frame, busC, rmsPostFloorFast, gainAppliedLevel);
+
+                    frame.busA = busA;
+                    frame.busB = busB;
+                    frame.busC = busC;
+
+                    // Lead energy: compute features before vocalResponse() uses lead.confidence
+                    updateLeadEnergy(busA.norm, busB.norm, busC.norm,
+                                    frame.fft_pre, b.NUM_FFT_BINS);
+                    frame.voxApprox = lead.energy;
+
+                    // Vocal response: smooth, scale, and blend with busC energy
+                    // NOTE: test hook to FL vocal detector disabled; current "vocal respose"  
+                    //   voxApprox = busCSmoothEMA * (1.0f + busC.norm)     
+                    //frame.voxConf = voxConf;
+                    //frame.smoothedVoxConf = smoothedVoxConf;
+                    //frame.scaledVoxConf = scaledVoxConf;
+                    //frame.voxApprox = voxApprox;
+
+                
+                } // if busBased
+
+                return frame;
+        #endif  // legacy captureAudioFrame
+
+        //=========================================================================
+        // Hybrid implementation: process-all + single-frame snapshot
+        //=========================================================================
+
         // *** STAGE: set current AudioVizConfig parameters
         updateVizConfig();
 
-        // *** STAGE: capture filtered audio sample
-        sampleAudio();
+        // Per-render-frame latch reset (NOT per drained buffer).
+        busA.newBeat = false;  busA.relativeIncrease = 0.0f;
+        busB.newBeat = false;  busB.relativeIncrease = 0.0f;
+        busC.newBeat = false;  busC.relativeIncrease = 0.0f;
 
-        // getVocalConfidence()->update() runs inside audioProcessor.update() (called by sampleAudio),
-        // so getConfidence() is already current for this frame.
-        // audioProcessor.getVocalConfidence() outputs significant positive values even during silence;
-        //   so need to shut off getVocalConfidence() input when noiseGate is closed          
-        // FL vocal detector not used:   
-        // voxConf = noiseGateOpen ? audioProcessor.getVocalConfidence() : 0.0f;
-
-        // Gate-open transition: reset per-bus EMA state so that avgLevel (alpha=0.02,
-        // very slow) doesn't produce inflated _norm on the first beats after silence.
-        // Without this, avgLevel decays to ~0.01 during gate-closed silence, causing
-        // avg/avgLevel to spike to 10-40x for all buses equally when music resumes.
-        {
-            static bool prevGateForBus = false;
-            if (noiseGateOpen && !prevGateForBus) {
-                const float kResetLevel = 0.001f;  // linear FFT scale; tuned for FFT_MAX_FREQ=4000 (was 0.001 at 5000/8000, 0.01 at 16000)
-                busA.avgLevel = kResetLevel;  busA.energyEMA = 0.0f;
-                busB.avgLevel = kResetLevel;  busB.energyEMA = 0.0f;
-                busC.avgLevel = kResetLevel;  busC.energyEMA = 0.0f;
-            }
-            prevGateForBus = noiseGateOpen;
-        }
-
+        // Default snapshot (covers the "no new audio" case).
         frame.valid = filteredSample.isValid();
         frame.timestamp = currentSample.timestamp();
         frame.pcm = filteredSample.pcm();
 
-        // *** STAGE: Run FFT engine once per timestamp
-        static const fl::audio::fft::Bins* lastFft = nullptr;
-        const fl::audio::fft::Bins* fftForBeat = nullptr;
-        float rmsNormFast = 0.0f;
-        float timeEnergy = 0.0f;
-        float beatBins[MAX_FFT_BINS] = {0.0f};
-        bool beatBinsValid = false;
-        float rmsPostFloor = 0.0f;
-        float rmsPostFloorFast = 0.0f; 
-        float gainAppliedLevel = 1.0f;
-        if (frame.valid) {
-            if (frame.timestamp != lastFftTimestamp) {
-                fftForBeat = getFFT(b);
-                lastFftTimestamp = frame.timestamp;
-                lastFft = fftForBeat;
-            } else {
-                fftForBeat = lastFft;
-            }
-            frame.rms_raw = filteredSample.rms(); // no temporal smoothing
-            rmsNormFast = frame.rms_raw / 32768.0f;
-            rmsNormFast = fl::clamp(rmsNormFast, 0.0f, 1.0f);
-        } else {
-            frame.rms_raw = 0.0f;
-        }
-        frame.fft = fftForBeat;
+        if (!audioSource) {
+            currentSample = fl::audio::Sample();
+            filteredSample = fl::audio::Sample();
 
-        // *** STAGE: Get frame RMS and calculate _norm and _factor values
-        frame.rms = getRMS(); // with temporal smoothing; currently used only for diagnostics
-        
-        if (frame.valid) {
-
-            // Normalize RMS/peak and update auto-calibration
-            float rmsNormRaw = frame.rms / 32768.0f; // with temporal smoothing
-            rmsNormFast = frame.rms_raw / 32768.0f; // no temporal smoothing
-            float peakNormRaw = frame.peak / 32768.0f;
-            rmsNormRaw = fl::clamp(rmsNormRaw, 0.0f, 1.0f);
-            rmsNormFast = fl::clamp(rmsNormFast, 0.0f, 1.0f);
-            peakNormRaw = fl::clamp(peakNormRaw, 0.0f, 1.0f);
-
-            updateAutoFloor(rmsNormRaw);
-            updateAvLeveler(rmsNormRaw);
-            // rmsPostFloor is currently computed but unused. You could remove it and the getRMS() call if nothing else
-            // references them, but keeping them costs essentially nothing and they're useful for diagnostics.
-            rmsPostFloor = FL_MAX(0.0f, rmsNormRaw - vizConfig.audioFloorLevel);
-
-            timeEnergy = FL_MAX(0.0f, rmsNormFast - vizConfig.audioFloorLevel);
-
-            // Fast RMS for bus cross-calibration: single asymmetric EMA of
-            // unsmoothed RMS, bypassing the median+EMA cascade in getRMS().
-            // Gives bus.norm/factor/normEMA ~2 frames less latency on onsets.
-            static float rmsCrossCalEMA = 0.0f;
-            constexpr float rmsCcAttack  = 0.6f;   // ~1 frame to 60% of onset
-            constexpr float rmsCcRelease = 0.15f;  // ~4 frame half-life for decay
-            float rmsCcAlpha = (rmsNormFast > rmsCrossCalEMA) ? rmsCcAttack : rmsCcRelease;
-            rmsCrossCalEMA += rmsCcAlpha * (rmsNormFast - rmsCrossCalEMA);
-            rmsPostFloorFast = FL_MAX(0.0f, rmsCrossCalEMA - vizConfig.audioFloorLevel);
-
-            gainAppliedLevel = vizConfig.gainLevel * avLevelerValue;
-            float gainAppliedFft = vizConfig.gainFft * avLevelerValue;
-
-            frame.rms_norm = rmsNormRaw;
-            frame.rms_norm = fl::clamp(FL_MAX(0.0f, frame.rms_norm - vizConfig.audioFloorLevel) * gainAppliedLevel, 0.0f, 1.0f);
-
-            // rmsFactor: 0.0–2.0 multiplicative scale, 1.0 at neutralPoint
-            constexpr float neutralPoint = 0.3f;
-            constexpr float gamma = 0.5754f; // ln(0.5)/ln(0.3)
-            frame.rms_factor = 2.0f * fl::powf(frame.rms_norm, gamma);
-
-            // *** STAGE: Derive busses/bands from FFT bins (band boundaries set in binConfig),
-            //            calculate _norm and _factor values
-            frame.fft_norm_valid = false;
-            //if (frame.fft && frame.fft->bins_db.size() > 0) {  // pre-FastLED API change
-            if (frame.fft && frame.fft->db().size() > 0) {
-                for (uint8_t i = 0; i < b.NUM_FFT_BINS; i++) {
-                    // --- Visualization path: dB-linear scale (perceptually uniform for display) ---
-                    float mag_db = 0.0f;
-                    //if (i < frame.fft->bins_db.size()) {  // pre-FastLED API change
-                    //    mag_db = frame.fft->bins_db[i] / 100.0f;
-                    if (i < frame.fft->db().size()) {
-                        mag_db = frame.fft->db()[i] / 100.0f;
-                    }
-                    mag_db = FL_MAX(0.0f, mag_db - vizConfig.audioFloorFft);
-                    frame.fft_norm[i] = fl::clamp(mag_db * gainAppliedFft, 0.0f, 1.0f);
-
-                    // --- Bus beat detection path: true linear amplitude ---
-                    // raw() is the Q15 linear magnitude; /32768 normalizes to [0, ~1].
-                    // A harmonic 30 dB below its fundamental is ~3% of it here,
-                    // vs ~30% in the dB-linear (/100) domain — far better harmonic
-                    // rejection for per-bus frequency discrimination.
-                    float mag_lin = 0.0f;
-                    //if (i < frame.fft->bins_raw.size()) {  // pre-FastLED API change
-                    //    mag_lin = frame.fft->bins_raw[i] / 32768.0f;
-                    if (i < frame.fft->raw().size()) {
-                        mag_lin = frame.fft->raw()[i] / 32768.0f;
-                    }
-                    frame.fft_pre[i] = fl::clamp(mag_lin, 0.0f, 1.0f);
-                }
-                for (uint8_t i = b.NUM_FFT_BINS; i < MAX_FFT_BINS; i++) {
-                    frame.fft_pre[i] = 0.0f;
-                    frame.fft_norm[i] = 0.0f;
-                }
-                frame.fft_norm_valid = true;
-
-            } else { // if no valid fft data
-
-                for (uint8_t i = 0; i < b.NUM_FFT_BINS; i++) {
-                    frame.fft_pre[i] = 0.0f;
-                    frame.fft_norm[i] = 0.0f;
-                }
-                frame.fft_norm_valid = false;
-            }
-        } else { // if frame not valid
+            frame.valid = false;
+            frame.timestamp = 0;
+            frame.pcm = fl::span<const int16_t>();
             frame.fft = nullptr;
             frame.fft_norm_valid = false;
+            frame.rms_raw = 0.0f;
+            frame.rms = 0.0f;
             frame.rms_norm = 0.0f;
-            //frame.peak_norm = 0.0f;
-            for (uint8_t i = 0; i < b.NUM_FFT_BINS; i++) {
+            frame.rms_factor = 0.0f;
+            for (uint8_t i = 0; i < MAX_FFT_BINS; i++) {
+                frame.fft_pre[i] = 0.0f;
+                frame.fft_norm[i] = 0.0f;
+            }
+
+            if (b.busBased) {
+                frame.busA = busA;
+                frame.busB = busB;
+                frame.busC = busC;
+                frame.voxApprox = lead.energy;
+            }
+            return frame;
+        }
+
+        checkAudioInput();
+
+        fl::string errorMsg;
+        if (audioSource->error(&errorMsg)) {
+            Serial.print("Audio error: ");
+            Serial.println(errorMsg.c_str());
+
+            currentSample = fl::audio::Sample();
+            filteredSample = fl::audio::Sample();
+
+            frame.valid = false;
+            frame.fft = nullptr;
+            frame.fft_norm_valid = false;
+            for (uint8_t i = 0; i < MAX_FFT_BINS; i++) {
+                frame.fft_pre[i] = 0.0f;
+                frame.fft_norm[i] = 0.0f;
+            }
+
+            if (b.busBased) {
+                frame.busA = busA;
+                frame.busB = busB;
+                frame.busC = busC;
+                frame.voxApprox = lead.energy;
+            }
+            return frame;
+        }
+
+        fl::vector_inlined<fl::audio::Sample, 16> samples;
+        samples.clear();
+        size_t readCount = audioSource->readAll(&samples);
+        lastAudioBuffersDrained = static_cast<uint16_t>(readCount);
+
+        // No new DMA buffers available. If we already have valid data, keep it
+        // rather than invalidating. Only invalidate on true startup.
+        if (readCount == 0 && !filteredSample.isValid()) {
+            currentSample = fl::audio::Sample();
+            filteredSample = fl::audio::Sample();
+
+            frame.valid = false;
+            frame.timestamp = 0;
+            frame.pcm = fl::span<const int16_t>();
+            frame.fft = nullptr;
+            frame.fft_norm_valid = false;
+            for (uint8_t i = 0; i < MAX_FFT_BINS; i++) {
                 frame.fft_pre[i] = 0.0f;
                 frame.fft_norm[i] = 0.0f;
             }
         }
 
+        bool processedAny = false;
+        float lastGainAppliedLevel = vizConfig.gainLevel * avLevelerValue;
+
+        if (readCount > 0) {
+            static uint32_t lastAudioTimestamp = 0;
+            static const fl::audio::fft::Bins* lastFft = nullptr;
+            static bool prevGateForBus = false;
+            static float rmsCrossCalEMA = 0.0f;
+
+            constexpr float kMaxDtMs = 250.0f;  // safety clamp for dt-correct alphas
+
+            const size_t startIdx = MYAUDIO_HYBRID_AUDIO ? 0 : (readCount - 1);
+
+            for (size_t si = startIdx; si < readCount; si++) {
+                const fl::audio::Sample& s = samples[si];
+                const uint32_t ts = s.timestamp();
+
+                float dtMs = kAlphaRefDtMs;
+                if (lastAudioTimestamp != 0) {
+                    const int32_t dt = static_cast<int32_t>(ts) - static_cast<int32_t>(lastAudioTimestamp);
+                    if (dt > 0 && dt <= static_cast<int32_t>(kMaxDtMs)) {
+                        dtMs = static_cast<float>(dt);
+                    }
+                }
+                lastAudioTimestamp = ts;
+
+                // Filter + gate this buffer. (No Processor.update here — we do it once at the end.)
+                filterSample(s, dtMs, false);
+                processedAny = true;
+
+                // Gate-open transition: reset per-bus EMA state so that avgLevel (slow)
+                // doesn't produce inflated _norm on the first beats after silence.
+                if (noiseGateOpen && !prevGateForBus) {
+                    const float kResetLevel = 0.001f;  // linear FFT scale; tuned for FFT_MAX_FREQ=5000
+                    busA.avgLevel = kResetLevel;  busA.energyEMA = 0.0f;
+                    busB.avgLevel = kResetLevel;  busB.energyEMA = 0.0f;
+                    busC.avgLevel = kResetLevel;  busC.energyEMA = 0.0f;
+                }
+                prevGateForBus = noiseGateOpen;
+
+                frame.valid = filteredSample.isValid();
+                frame.timestamp = currentSample.timestamp();
+                frame.pcm = filteredSample.pcm();
+
+                const fl::audio::fft::Bins* fftForBeat = nullptr;
+                float rmsNormFast = 0.0f;
+                float rmsPostFloorFast = 0.0f;
+                float gainAppliedLevel = 1.0f;
+                float gainAppliedFft = 1.0f;
+
+                if (frame.valid) {
+                    if (frame.timestamp != lastFftTimestamp) {
+                        fftForBeat = getFFT(b);
+                        lastFftTimestamp = frame.timestamp;
+                        lastFft = fftForBeat;
+                    } else {
+                        fftForBeat = lastFft;
+                    }
+
+                    frame.rms_raw = filteredSample.rms(); // no temporal smoothing
+                    rmsNormFast = frame.rms_raw / 32768.0f;
+                    rmsNormFast = fl::clamp(rmsNormFast, 0.0f, 1.0f);
+
+                    updateAutoFloor(rmsNormFast, dtMs);
+                    updateAvLeveler(rmsNormFast, dtMs);
+
+                    // Fast RMS for bus cross-calibration: asymmetric EMA of unsmoothed RMS.
+                    constexpr float rmsCcAttackRef  = 0.6f;   // ref dt
+                    constexpr float rmsCcReleaseRef = 0.15f;  // ref dt
+                    const float rmsCcAlphaRef = (rmsNormFast > rmsCrossCalEMA) ? rmsCcAttackRef : rmsCcReleaseRef;
+                    const float rmsCcAlpha = alphaFromRef(rmsCcAlphaRef, dtMs);
+                    rmsCrossCalEMA += rmsCcAlpha * (rmsNormFast - rmsCrossCalEMA);
+                    rmsPostFloorFast = FL_MAX(0.0f, rmsCrossCalEMA - vizConfig.audioFloorLevel);
+
+                    gainAppliedLevel = vizConfig.gainLevel * avLevelerValue;
+                    gainAppliedFft = vizConfig.gainFft * avLevelerValue;
+                } else {
+                    frame.rms_raw = 0.0f;
+                }
+
+                lastGainAppliedLevel = gainAppliedLevel;
+                frame.fft = fftForBeat;
+
+                // --- FFT bins: visualization (dB-linear) + bus beat detection (true linear) ---
+                if (frame.valid) {
+                    frame.fft_norm_valid = false;
+                    if (frame.fft && frame.fft->db().size() > 0) {
+                        for (uint8_t i = 0; i < b.NUM_FFT_BINS; i++) {
+                            // Visualization path: dB-linear scale
+                            float mag_db = 0.0f;
+                            if (i < frame.fft->db().size()) {
+                                mag_db = frame.fft->db()[i] / 100.0f;
+                            }
+                            mag_db = FL_MAX(0.0f, mag_db - vizConfig.audioFloorFft);
+                            frame.fft_norm[i] = fl::clamp(mag_db * gainAppliedFft, 0.0f, 1.0f);
+
+                            // Beat detection path: true linear magnitude
+                            float mag_lin = 0.0f;
+                            if (i < frame.fft->raw().size()) {
+                                mag_lin = frame.fft->raw()[i] / 32768.0f;
+                            }
+                            frame.fft_pre[i] = fl::clamp(mag_lin, 0.0f, 1.0f);
+                        }
+                        for (uint8_t i = b.NUM_FFT_BINS; i < MAX_FFT_BINS; i++) {
+                            frame.fft_pre[i] = 0.0f;
+                            frame.fft_norm[i] = 0.0f;
+                        }
+                        frame.fft_norm_valid = true;
+                    } else {
+                        for (uint8_t i = 0; i < MAX_FFT_BINS; i++) {
+                            frame.fft_pre[i] = 0.0f;
+                            frame.fft_norm[i] = 0.0f;
+                        }
+                        frame.fft_norm_valid = false;
+                    }
+                } else {
+                    frame.fft = nullptr;
+                    frame.fft_norm_valid = false;
+                    for (uint8_t i = 0; i < MAX_FFT_BINS; i++) {
+                        frame.fft_pre[i] = 0.0f;
+                        frame.fft_norm[i] = 0.0f;
+                    }
+                }
+
+                if (b.busBased) {
+                    // Phase 1: spectrally-flattened values
+                    updateBus(frame, b, busA, dtMs);
+                    updateBus(frame, b, busB, dtMs);
+                    updateBus(frame, b, busC, dtMs);
+
+                    // Phase 2: RMS-domain cross-cal + visualization gain
+                    finalizeBus(frame, busA, rmsPostFloorFast, gainAppliedLevel, dtMs);
+                    finalizeBus(frame, busB, rmsPostFloorFast, gainAppliedLevel, dtMs);
+                    finalizeBus(frame, busC, rmsPostFloorFast, gainAppliedLevel, dtMs);
+                }
+            }
+
+            // FastLED AudioProcessor: update once per render frame using the newest buffer.
+            if (filteredSample.isValid()) {
+                audioProcessor.update(filteredSample);
+            }
+        }
+
+        // *** STAGE: Get frame RMS and calculate published level outputs (newest buffer only)
+        frame.rms = getRMS(); // with temporal smoothing (diagnostic / slow level signal)
+
+        if (frame.valid) {
+            float rmsNormRaw = frame.rms / 32768.0f;
+            rmsNormRaw = fl::clamp(rmsNormRaw, 0.0f, 1.0f);
+
+            frame.rms_norm = rmsNormRaw;
+            frame.rms_norm =
+                fl::clamp(FL_MAX(0.0f, frame.rms_norm - vizConfig.audioFloorLevel) * lastGainAppliedLevel, 0.0f, 1.0f);
+
+            // rmsFactor: 0.0–2.0 multiplicative scale, 1.0 at neutralPoint
+            constexpr float neutralPoint = 0.3f;
+            (void)neutralPoint;
+            constexpr float gamma = 0.5754f; // ln(0.5)/ln(0.3)
+            frame.rms_factor = 2.0f * fl::powf(frame.rms_norm, gamma);
+        } else {
+            frame.rms_norm = 0.0f;
+            frame.rms_factor = 0.0f;
+        }
+
         if (b.busBased) {
-        
-            // Update bus outputs (phase 1: compute spectrally-flattened values)
-            updateBus(frame, b, busA);
-            updateBus(frame, b, busB);
-            updateBus(frame, b, busC);
-
-            // Phase 2: Apply RMS-domain cross-calibration and gain for visualization.
-            // Uses rmsPostFloorFast (asymmetric EMA of unsmoothed RMS) so bus
-            // envelopes track onsets ~2 frames faster than the old median+EMA path.
-            // In steady state, whitened _norm ≈ 1.0, so bus._norm ≈ crossCal * gain ≈ rms_norm.
-            finalizeBus(frame, busA, rmsPostFloorFast, gainAppliedLevel);
-            finalizeBus(frame, busB, rmsPostFloorFast, gainAppliedLevel);
-            finalizeBus(frame, busC, rmsPostFloorFast, gainAppliedLevel);
-
             frame.busA = busA;
             frame.busB = busB;
             frame.busC = busC;
 
-            // Lead energy: compute features before vocalResponse() uses lead.confidence
-            updateLeadEnergy(busA.norm, busB.norm, busC.norm,
-                             frame.fft_pre, b.NUM_FFT_BINS);
+            // Lead energy: keep as once-per-render-frame update (preserves existing feel).
+            if (processedAny && frame.fft_norm_valid) {
+                updateLeadEnergy(busA.norm, busB.norm, busC.norm,
+                                 frame.fft_pre, b.NUM_FFT_BINS);
+            }
             frame.voxApprox = lead.energy;
-
-            // Vocal response: smooth, scale, and blend with busC energy
-            // NOTE: test hook to FL vocal detector disabled; current "vocal respose"  
-            //   voxApprox = busCSmoothEMA * (1.0f + busC.norm)     
-            //frame.voxConf = voxConf;
-            //frame.smoothedVoxConf = smoothedVoxConf;
-            //frame.scaledVoxConf = scaledVoxConf;
-            //frame.voxApprox = voxApprox;
-
-        
-        } // if busBased
+        }
 
         return frame;
 
@@ -446,10 +865,13 @@ namespace myAudio {
                 int32_t maxLatencyMs = -0x7FFFFFFF;
                 int64_t sumLatencyMs = 0;
 
-                uint32_t lastPcmSamples = 0;
-                uint32_t lastSampleRate = 0;
-                uint32_t invalidCount = 0;
-            };
+                 uint32_t lastPcmSamples = 0;
+                 uint32_t lastSampleRate = 0;
+                 uint32_t lastBuffersDrained = 0;
+                 uint64_t sumBuffersDrained = 0;
+                 uint32_t buffersDrainedCount = 0;
+                 uint32_t invalidCount = 0;
+             };
 
             static LatencyStats stats;
 
@@ -483,8 +905,11 @@ namespace myAudio {
             }
             stats.lastFrameMs = now;
 
-            stats.lastPcmSamples = static_cast<uint32_t>(frame.pcm.size());
-            stats.lastSampleRate = getAudioSampleRate();
+             stats.lastPcmSamples = static_cast<uint32_t>(frame.pcm.size());
+             stats.lastSampleRate = getAudioSampleRate();
+             stats.lastBuffersDrained = static_cast<uint32_t>(lastAudioBuffersDrained);
+             stats.sumBuffersDrained += stats.lastBuffersDrained;
+             stats.buffersDrainedCount++;
 
             if ((now - stats.windowStartMs) >= 2000) {
                 const uint32_t windowMs = now - stats.windowStartMs;
@@ -500,21 +925,27 @@ namespace myAudio {
                     (windowMs > 0)
                         ? (stats.frameCount * 1000.0f / static_cast<float>(windowMs))
                         : 0.0f;
-                const uint32_t pcmMs =
-                    (stats.lastSampleRate > 0)
-                        ? static_cast<uint32_t>((stats.lastPcmSamples * 1000ULL) / stats.lastSampleRate)
-                        : 0;
-
-                FASTLED_DBG("Audio latency ms avg " << avgLatencyMs
-                               << " min " << stats.minLatencyMs
-                               << " max " << stats.maxLatencyMs
-                               << " | frame ms avg " << avgFrameMs
-                               << " max " << stats.maxFrameMs
-                               << " | fps " << fps
-                               << " | pcm " << stats.lastPcmSamples
-                               << " (" << pcmMs << " ms) sr " << stats.lastSampleRate
-                               << " | gate " << (noiseGateOpen ? 1 : 0)
-                               << " | invalid " << stats.invalidCount);
+                 const uint32_t pcmMs =
+                     (stats.lastSampleRate > 0)
+                         ? static_cast<uint32_t>((stats.lastPcmSamples * 1000ULL) / stats.lastSampleRate)
+                         : 0;
+                 const uint32_t avgBuffersDrained =
+                     (stats.buffersDrainedCount > 0)
+                         ? static_cast<uint32_t>(stats.sumBuffersDrained / stats.buffersDrainedCount)
+                         : 0;
+ 
+                 FASTLED_DBG("Audio latency ms avg " << avgLatencyMs
+                                << " min " << stats.minLatencyMs
+                                << " max " << stats.maxLatencyMs
+                                << " | frame ms avg " << avgFrameMs
+                                << " max " << stats.maxFrameMs
+                                << " | fps " << fps
+                                << " | bufs avg " << avgBuffersDrained
+                                << " last " << stats.lastBuffersDrained
+                                << " | pcm " << stats.lastPcmSamples
+                                << " (" << pcmMs << " ms) sr " << stats.lastSampleRate
+                                << " | gate " << (noiseGateOpen ? 1 : 0)
+                                << " | invalid " << stats.invalidCount);
 
                 stats = LatencyStats();
                 stats.windowStartMs = now;

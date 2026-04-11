@@ -15,12 +15,50 @@ namespace myAudio {
     using namespace fl;
 
     //=====================================================================
+    // Hybrid audio pipeline toggles
+    //=====================================================================
+
+    // When enabled, we process *all* audio buffers drained per render frame,
+    // but publish only the newest buffer's snapshot (AudioFrame) each frame.
+    // This dramatically reduces missed onsets when render FPS is low.
+    //
+    // Set to 0 for quick A/B comparison with the legacy "latest-only" drain.
+    #ifndef MYAUDIO_HYBRID_AUDIO
+    #define MYAUDIO_HYBRID_AUDIO 1
+    #endif
+
+    // Reference dt for interpreting legacy per-frame EMA alphas.
+    // Most of this audio pipeline was tuned around ~20 FPS (~50ms).
+    constexpr float kAlphaRefDtMs = 50.0f;
+
+    // Convert a "reference-frame alpha" into a per-step alpha for arbitrary dt,
+    // preserving the *time feel* across varying update cadences.
+    //
+    // alpha(dt) = 1 - (1 - alpha_ref)^(dt / ref_dt)
+    inline float alphaFromRef(float alphaRef, float dtMs, float refDtMs = kAlphaRefDtMs) {
+        if (alphaRef <= 0.0f) return 0.0f;
+        if (alphaRef >= 1.0f) return 1.0f;
+        if (dtMs <= 0.0f || refDtMs <= 0.0f) return 0.0f;
+        const float base = 1.0f - alphaRef;
+        const float exponent = dtMs / refDtMs;
+        const float decay = fl::powf(base, exponent);
+        return 1.0f - decay;
+    }
+
+    //=====================================================================
     // Constants
     //=====================================================================
 
     constexpr uint8_t MAX_FFT_BINS = 32;
-    constexpr float FFT_MIN_FREQ = 100.f;
-    constexpr float FFT_MAX_FREQ = 4000.f;
+
+    // FFT window length (in samples) used for spectral analysis.
+    // Note: input DMA blocks are currently 512 samples; we build a 1024-sample
+    // window from the most recent filtered audio for better low-frequency bin coverage.
+    constexpr uint16_t FFT_WINDOW_SAMPLES = 1024;
+    // FFT band range (log-spaced). Tuned for 44.1kHz + 1024-sample FFT window.
+    // Targets musical coverage ~60Hz–5kHz while avoiding "empty" LOG_REBIN bins.
+    constexpr float FFT_MIN_FREQ = 63.f;
+    constexpr float FFT_MAX_FREQ = 5000.f;
     constexpr uint8_t NUM_BUSES = 3;
 
     // Scale factors: single user control → domain-specific internal values
@@ -64,7 +102,7 @@ namespace myAudio {
         // INTERNAL
         uint8_t id = 0;
         bool isActive = false;
-        float avgLevel = 0.001f;  // linear scale: fft_pre = bins_raw/32768; tuned for FFT_MAX_FREQ=4000 (was 0.001 at 5000/8000, 0.01 at 16000)
+        float avgLevel = 0.001f;  // linear scale: fft_pre = bins_raw/32768; tuned for FFT_MAX_FREQ=5000 (was 0.001 at 5000/8000, 0.01 at 16000)
         float energyEMA = 0.0f;
         float normEMA = 0.0f;
         float relativeIncrease = 0.0f;
@@ -116,7 +154,7 @@ namespace myAudio {
         // Output/Internal
         bus.newBeat = false;
         bus.isActive = false;
-        bus.avgLevel = 0.001f;  // tuned for FFT_MAX_FREQ=4000 (was 0.001 at 5000/8000, 0.01 at 16000)
+        bus.avgLevel = 0.001f;  // tuned for FFT_MAX_FREQ=5000 (was 0.001 at 5000/8000, 0.01 at 16000)
         bus.energyEMA = 0.0f;
         bus.normEMA = 0.0f;
         bus.lastBeat = 0;
@@ -139,24 +177,24 @@ namespace myAudio {
 
     /* Frequency bin reference (16-bin, log spacing) ------
         f(n) = FFT_MIN_FREQ * (FFT_MAX_FREQ/FFT_MIN_FREQ)^(n/15)
-        = 100 * 40^(n/15)   [1024-sample FFT @ 44100 Hz → 43.1 Hz linear resolution]
+        = 63 * (5000/63)^(n/15)   [1024-sample FFT @ 44100 Hz -> 43.1 Hz linear resolution]
         Bin  Center Hz  Range label
-        0    100        bass
-        1    128        bass
-        2    164        bass
-        3    209        upper-bass
-        4    267        upper-bass
-        5    342        low-mid
-        6    437        mid
-        7    559        mid
-        8    715        mid
-        9    915        upper-mid
-        10   1170       upper-mid
-        11   1496       presence
-        12   1913       presence
-        13   2446       high
-        14   3128       high
-        15   4000       high
+        0    63         sub-bass
+        1    84         bass
+        2    113        bass
+        3    151        bass/upper-bass
+        4    202        upper-bass
+        5    271        low-mid
+        6    362        low-mid
+        7    485        mid
+        8    649        mid
+        9    869        upper-mid
+        10   1163       upper-mid
+        11   1557       presence
+        12   2085       presence
+        13   2791       high
+        14   3735       high
+        15   5000       high
      ---------------------------------------------------*/
 
     void initBins() {
@@ -174,8 +212,8 @@ namespace myAudio {
 
         // target: snare/mid percussive
         //bin[3].bus = &busB;
-        bin[4].bus = &busB;
-        bin[5].bus = &busB;
+        //bin[4].bus = &busB;
+        //bin[5].bus = &busB;
         bin[6].bus = &busB;
         bin[7].bus = &busB;
         bin[8].bus = &busB;
@@ -185,14 +223,14 @@ namespace myAudio {
         // target: vocals/"lead instruments"
         //bin[5].bus = &busC;
         //bin[6].bus = &busC;
-        bin[7].bus = &busC;
+        //bin[7].bus = &busC;
         bin[8].bus = &busC;
         bin[9].bus = &busC;
         bin[10].bus = &busC;
         bin[11].bus = &busC;
         bin[12].bus = &busC;
         bin[13].bus = &busC;
-        bin[14].bus = &busC;
+        //bin[14].bus = &busC;
         //bin[15].bus = &busC;
     }
 
@@ -264,6 +302,7 @@ namespace myAudio {
     //=====================================================================
 
     bool noiseGateOpen = false;
+    uint16_t lastAudioBuffersDrained = 0;   // how many DMA buffers were drained last frame
     float lastBlockRms = 0.0f;
     float lastAutoGainCeil = 0.0f;
     float lastAutoGainDesired = 0.0f;

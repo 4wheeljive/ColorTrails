@@ -9,12 +9,99 @@
 #include "audioTypes.h"
 #include "audioInput.h"
 #include "parameterSchema.h"
+#include "fl/stl/cstring.h"  // fl::memcpy, fl::memmove
 
 namespace myAudio {
 
     //=====================================================================
     // sampleAudio — I2S read, spike filter, DC correction, noise gate
     //=====================================================================
+
+    //=========================================================================
+    // filterSample — spike filter, DC correction, noise gate (+ optional Processor.update)
+    //
+    // Runs on a single captured DMA block. In hybrid mode we call this once per
+    // drained buffer to avoid missing short onsets between render frames.
+    //=========================================================================
+    inline void filterSample(const fl::audio::Sample& sample, float dtMs, bool updateAudioProcessor) {
+        currentSample = sample;
+
+        if (!currentSample.isValid()) {
+            filteredSample = fl::audio::Sample();
+            return;
+        }
+
+        // Spike filtering: I2S occasionally produces spurious samples near int16_t max/min
+        constexpr int16_t SPIKE_THRESHOLD = 10000;  // Samples beyond this are glitches
+
+        const auto& rawPcm = currentSample.pcm();
+        const size_t n = rawPcm.size();
+
+        // Clamp to our filtered PCM buffer capacity (prevents overflow if input block size changes).
+        const size_t kCap = sizeof(filteredPcmBuffer) / sizeof(filteredPcmBuffer[0]);
+        const size_t nClamped = (n > kCap) ? kCap : n;
+
+        // Calculate DC offset from non-spike samples
+        int64_t dcSum = 0;
+        size_t dcCount = 0;
+        for (size_t i = 0; i < n; i++) {
+            if (rawPcm[i] > -SPIKE_THRESHOLD && rawPcm[i] < SPIKE_THRESHOLD) {
+                dcSum += rawPcm[i];
+                dcCount++;
+            }
+        }
+        int16_t dcOffset = (dcCount > 0) ? static_cast<int16_t>(dcSum / dcCount) : 0;
+
+        // Copy samples to filtered buffer, replacing spikes with zero.
+        // Also calculate RMS for noise gate decision.
+        uint64_t sumSq = 0;
+        size_t validSamples = 0;
+
+        for (size_t i = 0; i < nClamped; i++) {
+            if (rawPcm[i] > -SPIKE_THRESHOLD && rawPcm[i] < SPIKE_THRESHOLD) {
+                int16_t corrected = rawPcm[i] - dcOffset;
+                filteredPcmBuffer[i] = corrected;
+                sumSq += static_cast<int32_t>(corrected) * corrected;
+                validSamples++;
+            } else {
+                filteredPcmBuffer[i] = 0;
+            }
+        }
+
+        float blockRMS = (validSamples > 0) ? fl::sqrtf(static_cast<float>(sumSq) / validSamples) : 0.0f;
+        lastBlockRms = blockRMS;
+        lastValidSamples = static_cast<uint16_t>(validSamples);
+        lastClampedSamples = static_cast<uint16_t>(nClamped);
+
+        // EMA-smooth blockRMS before gate decision so brief noise spikes don't open the gate.
+        // dt-correct: interpret the legacy alpha as tuned at ~50ms (~20 FPS).
+        static float blockRmsEMA = 0.0f;
+        constexpr float rmsEmaAlphaRef = 0.15f;
+        const float rmsEmaAlpha = alphaFromRef(rmsEmaAlphaRef, dtMs);
+        blockRmsEMA = blockRmsEMA * (1.0f - rmsEmaAlpha) + blockRMS * rmsEmaAlpha;
+        lastBlockRms = blockRmsEMA;  // update diagnostic to show smoothed value
+
+        // NOISE GATE with hysteresis to prevent flickering
+        if (blockRmsEMA >= cNoiseGateOpen) {
+            noiseGateOpen = true;
+        } else if (blockRmsEMA < cNoiseGateClose) {
+            noiseGateOpen = false;
+        }
+
+        // If gate is closed, zero out entire buffer
+        if (!noiseGateOpen) {
+            for (size_t i = 0; i < nClamped; i++) {
+                filteredPcmBuffer[i] = 0;
+            }
+        }
+
+        fl::span<const int16_t> filteredSpan(filteredPcmBuffer, nClamped);
+        filteredSample = fl::audio::Sample(filteredSpan, currentSample.timestamp());
+
+        if (updateAudioProcessor) {
+            audioProcessor.update(filteredSample);
+        }
+    }
 
     void sampleAudio() {
 
@@ -75,6 +162,7 @@ namespace myAudio {
 
         validCount++;
 
+#if 0
         //=====================================================================
         // SPIKE FILTERING - Filter raw samples BEFORE AudioProcessor
         // This ensures beat detection, FFT, bass/mid/treble all get clean data
@@ -169,6 +257,11 @@ namespace myAudio {
         // Process through AudioProcessor (triggers callbacks)
             // - only needed if there are active callbacks to trigger
         audioProcessor.update(filteredSample);  // filtered
+#endif
+
+        // Legacy pipeline path: keep fixed-alpha behavior (tuned per render frame).
+        // Hybrid pipeline calls filterSample() per-buffer with dtMs derived from audio timestamps.
+        filterSample(currentSample, kAlphaRefDtMs, true);
 
     } // sampleAudio()
 
@@ -244,6 +337,35 @@ namespace myAudio {
         const auto &pcm = filteredSample.pcm();
         if (pcm.size() == 0) return nullptr;
 
+        // Build a larger FFT window (typically 1024) from the most recent filtered PCM.
+        // This avoids "empty" LOG_REBIN bins in the low end when using 16 bands and
+        // keeps the bin geometry musically meaningful (e.g., ~60Hz–5kHz coverage).
+        //
+        // Input arrives in 512-sample DMA blocks; we stitch a rolling window.
+        static int16_t fftWindow[FFT_WINDOW_SAMPLES] = {0};
+        static size_t fftWindowValid = 0;  // how many newest samples are real (startup ramp)
+
+        const size_t wantN = static_cast<size_t>(FFT_WINDOW_SAMPLES);
+        if (pcm.size() >= wantN) {
+            // If the input block size ever grows beyond our window, just take the newest wantN.
+            fl::memcpy(fftWindow, pcm.data() + (pcm.size() - wantN), wantN * sizeof(int16_t));
+            fftWindowValid = wantN;
+        } else {
+            // Shift older samples down and append the newest block at the end.
+            const size_t appendN = pcm.size();
+            const size_t keepN = wantN - appendN;
+            fl::memmove(fftWindow, fftWindow + appendN, keepN * sizeof(int16_t));
+            fl::memcpy(fftWindow + keepN, pcm.data(), appendN * sizeof(int16_t));
+            fftWindowValid += appendN;
+            if (fftWindowValid > wantN) fftWindowValid = wantN;
+        }
+
+        // Not enough history yet (startup). We can still run FFT on a partially-zero window,
+        // but returning nullptr makes downstream "valid" checks more predictable.
+        if (fftWindowValid < wantN / 2) {
+            return nullptr;
+        }
+
         int sampleRate = fl::audio::fft::Args::DefaultSampleRate();
         if (config.is<fl::audio::ConfigI2S>()) {
             sampleRate = static_cast<int>(config.get<fl::audio::ConfigI2S>().mSampleRate);
@@ -252,14 +374,14 @@ namespace myAudio {
         }
 
         fl::audio::fft::Args args(
-            static_cast<int>(pcm.size()),
+            static_cast<int>(wantN),
             b.NUM_FFT_BINS,
             FFT_MIN_FREQ,
             FFT_MAX_FREQ,
             sampleRate
         );
 
-        fl::span<const fl::i16> span(pcm.data(), pcm.size());
+        fl::span<const fl::i16> span(reinterpret_cast<const fl::i16*>(fftWindow), wantN);
         fftEngine.run(span, &fftBins, args);
         return &fftBins;
     }

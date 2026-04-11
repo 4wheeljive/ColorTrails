@@ -23,7 +23,7 @@ namespace flowFields {
     }
 
     struct AudioDotsParams {
-        uint8_t dotDiam = 3.0f;
+        uint8_t dotDiam = 1.0f;
         //uint8_t numActiveTimers = 0;
     };
 
@@ -38,6 +38,14 @@ namespace flowFields {
 
         // On each new beat, spawn a dot at a random grid position
         if (myAudio::busC.newBeat) {
+            float cx = random8(0, WIDTH  - 1) + random8() / 255.0f;
+            float cy = random8(0, HEIGHT - 1) + random8() / 255.0f;
+            // Color from rainbow based on current time
+            ColorF c = rainbow(t, vizConfig.colorShift, random8() / 255.0f);
+            drawDot(cx, cy, audioDots.dotDiam * 5, c.r, c.g, c.b);
+        }
+    
+        if (myAudio::busB.newBeat) {
             float cx = random8(0, WIDTH  - 1) + random8() / 255.0f;
             float cy = random8(0, HEIGHT - 1) + random8() / 255.0f;
             // Color from rainbow based on current time
