@@ -111,8 +111,7 @@ const char* const FLOWS[] PROGMEM = {
 // Flow field params
 const char* const NOISE_PARAMS[] PROGMEM = {
    "xSpeed", "ySpeed", "xAmp", "yAmp","xFreq", "yFreq", "xShift", "yShift",
-   "modAmpRate", "modAmpLevel",
-   "modSpeedRate", "modSpeedLevel",
+   "modAmpRate", "modAmpLevel", "modSpeedRate", "modSpeedLevel",
    "modShiftRate", "modShiftLevel"
 };
 const char* const RADIAL_PARAMS[] PROGMEM = {
@@ -126,7 +125,10 @@ const char* const RINGS_PARAMS[] PROGMEM = {
    "modBreatheRate", "modBreatheLevel"
 };
 const char* const SPIRAL_PARAMS[] PROGMEM = {
-   "angularStep", "radialStep", "blendFactor"
+   "angularStep", "radialStep", "blendFactor",
+   "modAngularStepRate", "modAngularStepLevel",
+   "modRadialStepRate", "modRadialStepLevel",
+   "modBlendFactorRate", "modBlendFactorLevel"
 };
 // Note: spiral reuses shared cVars radialStep and blendFactor
 
@@ -142,7 +144,7 @@ const FlowParamEntry FLOW_PARAM_LOOKUP[] PROGMEM = {
    {"radial", RADIAL_PARAMS, 2},
    {"directional", DIRECTIONAL_PARAMS, 6},
    {"rings", RINGS_PARAMS, 5},
-   {"spiral", SPIRAL_PARAMS, 3}
+   {"spiral", SPIRAL_PARAMS, 9}
 };
 
 static const FlowParamEntry* getFlowParams(uint8_t flowIdx) {
@@ -275,6 +277,12 @@ float cModBreatheLevel = 1.0f;
 // spiral
 float cAngularStep = 0.28f;
 bool cOutward = false;
+float cModAngularStepRate = 0.5f;
+float cModAngularStepLevel = 0.5f;
+float cModRadialStepRate = 0.5f;
+float cModRadialStepLevel = 0.5f;
+float cModBlendFactorRate = 0.5f;
+float cModBlendFactorLevel = 0.5f;
 
 // AUDIO -----------------------
 bool maxBins = false;
@@ -374,4 +382,10 @@ float cExpDecayFactor = 0.9f;
    X(bool, AngleFreezeY, false) \
    X(bool, AngleFreezeZ, false) \
    X(float, AngularStep, 0.28f) \
-   X(bool, Outward, false)
+   X(bool, Outward, false) \
+   X(float, ModAngularStepRate, 0.5f) \
+   X(float, ModAngularStepLevel, 0.5f) \
+   X(float, ModRadialStepRate, 0.5f) \
+   X(float, ModRadialStepLevel, 0.5f) \
+   X(float, ModBlendFactorRate, 0.5f) \
+   X(float, ModBlendFactorLevel, 0.5f)

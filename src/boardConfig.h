@@ -39,6 +39,7 @@
 
 #else
 
+   /*
     // --- 48x64, 6 strips (P4-WIFI6 / Waveshare) ---
     #include "reference/matrixMap_48x64_6pin.h"
     #define PIN0 5
@@ -51,6 +52,27 @@
     #define WIDTH 64
     #define NUM_STRIPS 6
     #define NUM_LEDS_PER_STRIP 512
+    #define LED_DRIVER "PARLIO"
+    */
+    
+    // --- 48x64, 12 strips (P4-WIFI6 / Waveshare) ---
+    #include "reference/matrixMap_48x64_12pin.h"
+    #define PIN0  2
+    #define PIN1  27
+    #define PIN2  3
+    #define PIN3  26
+    #define PIN4  4
+    #define PIN5  23
+    #define PIN6  5
+    #define PIN7  22
+    #define PIN8  49
+    #define PIN9  21
+    #define PIN10 50
+    #define PIN11 20
+    #define HEIGHT 48
+    #define WIDTH  64
+    #define NUM_STRIPS 12
+    #define NUM_LEDS_PER_STRIP 256
     #define LED_DRIVER "PARLIO"
 
 #endif

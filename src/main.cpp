@@ -16,15 +16,13 @@ CREDITS:
 //#define FORMAT_LITTLEFS_IF_FAILED true
 
 bool debug = false;
-bool audioEnabled = true;
-bool audioLatencyDiagnostics = true;
+bool audioEnabled = false;
+bool audioLatencyDiagnostics = false;
 
-/*
 #include "profiler.h"
 #ifdef PROFILING_ENABLED
 	FrameProfiler profiler;
 #endif
-*/
 
 #include "boardConfig.h"
 
@@ -119,11 +117,42 @@ void setup() {
 		FastLED.addLeds<WS2812B, PIN5, GRB>(leds, NUM_LEDS_PER_STRIP * 5, NUM_LEDS_PER_STRIP)
 			.setCorrection(TypicalLEDStrip);
 	#endif
-
-	#ifndef BIG_BOARD
-		FastLED.setMaxPowerInVoltsAndMilliamps(5, 750);
+	
+	#ifdef PIN6
+		FastLED.addLeds<WS2812B, PIN6, GRB>(leds, NUM_LEDS_PER_STRIP * 6, NUM_LEDS_PER_STRIP)
+			.setCorrection(TypicalLEDStrip);
 	#endif
 
+	#ifdef PIN7
+		FastLED.addLeds<WS2812B, PIN7, GRB>(leds, NUM_LEDS_PER_STRIP * 7, NUM_LEDS_PER_STRIP)
+			.setCorrection(TypicalLEDStrip);
+	#endif
+
+	#ifdef PIN8
+		FastLED.addLeds<WS2812B, PIN8, GRB>(leds, NUM_LEDS_PER_STRIP * 8, NUM_LEDS_PER_STRIP)
+			.setCorrection(TypicalLEDStrip);
+	#endif
+
+	#ifdef PIN9
+		FastLED.addLeds<WS2812B, PIN9, GRB>(leds, NUM_LEDS_PER_STRIP * 9, NUM_LEDS_PER_STRIP)
+			.setCorrection(TypicalLEDStrip);
+	#endif
+
+	#ifdef PIN10
+		FastLED.addLeds<WS2812B, PIN10, GRB>(leds, NUM_LEDS_PER_STRIP * 10, NUM_LEDS_PER_STRIP)
+			.setCorrection(TypicalLEDStrip);
+	#endif
+
+	#ifdef PIN11
+		FastLED.addLeds<WS2812B, PIN11, GRB>(leds, NUM_LEDS_PER_STRIP * 11, NUM_LEDS_PER_STRIP)
+			.setCorrection(TypicalLEDStrip);
+	#endif
+
+	#ifdef CONFIG_IDF_TARGET_ESP32S3
+		#ifndef BIG_BOARD
+			FastLED.setMaxPowerInVoltsAndMilliamps(5, 750);
+		#endif
+	#endif
 	FastLED.setBrightness(BRIGHTNESS);
 
 	FastLED.clear();
@@ -150,7 +179,7 @@ void setup() {
 
 void loop() {
 
-	//PROFILE_FRAME_BEGIN();
+	PROFILE_FRAME_BEGIN();
 
 	// Hybrid audio pipeline: capture + FFT/bus processing happens inside
 	// myAudio::updateAudioFrame() (called by audio-enabled emitters/programs).
@@ -166,17 +195,19 @@ void loop() {
 	}
 #endif
 
+	/*
 	EVERY_N_SECONDS(3) {
 		uint8_t fps = FastLED.getFPS();
 		FASTLED_DBG(fps << " fps");
 	}
+	*/
 
-	/*
+	
 	EVERY_N_SECONDS(10) {
 		PROFILE_REPORT();
 		PROFILE_RESET();
 	}
-	*/
+	
 
 	if (!displayOn){
 		FastLED.clear();
@@ -193,9 +224,9 @@ void loop() {
 		flowFields::runFlowFields();
 	}
 
-	//PROFILE_START("led_show");
+	PROFILE_START("led_show");
 	FastLED.show();
-	//PROFILE_END();
+	PROFILE_END();
 
 	if (!deviceConnected && wasConnected) {
 		if (debug) {Serial.println("Device disconnected.");}
@@ -205,6 +236,6 @@ void loop() {
 		wasConnected = false;
 	}
 
-	//PROFILE_FRAME_END();
+	PROFILE_FRAME_END();
 
 } // loop()

@@ -135,6 +135,12 @@ namespace flowFields {
                 cRadialStep = spiral.radialStep;
                 cBlendFactor = spiral.blendFactor;
                 cOutward = spiral.outward;
+                cModAngularStepRate = spiral.modAngularStep.modRate;
+                cModAngularStepLevel = spiral.modAngularStep.modLevel;
+                cModRadialStepRate = spiral.modRadialStep.modRate;
+                cModRadialStepLevel = spiral.modRadialStep.modLevel;
+                cModBlendFactorRate = spiral.modBlendFactor.modRate;
+                cModBlendFactorLevel = spiral.modBlendFactor.modLevel;
                 break;
             }
             default: break;
@@ -180,6 +186,12 @@ namespace flowFields {
         spiral.radialStep = cRadialStep;
         spiral.blendFactor = cBlendFactor;
         spiral.outward = cOutward;
+        spiral.modAngularStep.modRate = cModAngularStepRate;
+        spiral.modAngularStep.modLevel = cModAngularStepLevel;
+        spiral.modRadialStep.modRate = cModRadialStepRate;
+        spiral.modRadialStep.modLevel = cModRadialStepLevel;
+        spiral.modBlendFactor.modRate = cModBlendFactorRate;
+        spiral.modBlendFactor.modLevel = cModBlendFactorLevel;
     }
 
     // Push emitter + universal defaults into cVars (called on emitter/mode change)

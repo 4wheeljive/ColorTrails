@@ -22,14 +22,76 @@ namespace flowFields {
         float radialStep    = 0.18f;   // radial offset per sample
         float blendFactor   = 0.45f;   // blend: 0 = keep current, 1 = fully transport
         bool  outward       = false;   // false = inward spiral, true = outward spiral
+   
+        // Shared UI-facing modulation controls.
+        // Each ModConfig uses modTimer for X and modTimer + 1 for Y.
+        ModConfig modAngularStep   = {0, 0.5f, 0.5f}; // modTimer, modRate, modLevel  
+        ModConfig modRadialStep = {1, 0.5f, 0.5f};
+        ModConfig modBlendFactor = {2, 0.5f, 0.5f};
     };
 
     SpiralParams spiral;
 
+    // Runtime working values prepared each frame by spiralPrepare()
+    // and consumed by spiralAdvect().
+    static float workAngularStep = 0.0f;
+    static float workRadialStep = 0.0f;
+    static float workBlendFactor = 0.0f;
+
     // --- Prepare: nothing to build (geometry is purely radial/angular) ---
 
     static void spiralPrepare(float t) {
+
         (void)t;
+
+        // -----------------------------------------------------------------
+        // 1) Plumbing: assign modulation channels
+        // -----------------------------------------------------------------
+
+        const ModConfig& angularStepMod = spiral.modAngularStep;
+        const ModConfig& radialStepMod = spiral.modRadialStep;
+        const ModConfig& blendFactorMod = spiral.modBlendFactor;
+
+        const uint8_t angularStepTimer = angularStepMod.modTimer;
+        const uint8_t radialStepTimer = radialStepMod.modTimer;
+        const uint8_t blendFactorTimer = blendFactorMod.modTimer;
+
+        timings.ratio[angularStepTimer]  = 0.0004f * angularStepMod.modRate;
+        //timings.offset[angularStepTimer] = 0.0f;
+
+        timings.ratio[radialStepTimer]  = 0.00045f * radialStepMod.modRate;
+        //timings.offset[radialStepTimer] = 0.0f;
+
+        timings.ratio[blendFactorTimer]  = 0.0005f * blendFactorMod.modRate;
+        //timings.offset[blendFactorTimer] = 0.0f;
+
+        calculate_modulators(timings, 3);
+
+        // -----------------------------------------------------------------
+        // 2) Signal acquisition: centered bipolar control signals [-1, 1]
+        // -----------------------------------------------------------------
+
+        const float angularStepSignal = move.directional_noise[angularStepTimer];
+        const float radialStepSignal = move.directional_noise[radialStepTimer];
+        const float blendFactorSignal = move.directional_noise[blendFactorTimer];
+
+        // -----------------------------------------------------------------
+        // 3) Artistic application
+        // -----------------------------------------------------------------
+
+        // Amplitude: centered multiplicative modulation around base value.
+        const float angularStepDepth = 0.85f;
+        workAngularStep = spiral.angularStep * (1.0f + angularStepMod.modLevel * angularStepDepth * angularStepSignal);
+        workAngularStep = fmaxf(0.0f, workAngularStep);
+        
+        const float radialStepDepth = 0.85f;
+        workRadialStep = spiral.radialStep * (1.0f + radialStepMod.modLevel * radialStepDepth * radialStepSignal);
+        workRadialStep = fmaxf(0.0f, workRadialStep);
+
+        const float blendFactorDepth = 0.85f;
+        workBlendFactor = spiral.blendFactor * (1.0f + blendFactorMod.modLevel * blendFactorDepth * blendFactorSignal);
+        workBlendFactor = fmaxf(0.0f, fminf(1.0f, workBlendFactor));
+
     }
 
     // --- Advect: spiral transport with bilinear sampling + fade ---
@@ -42,9 +104,9 @@ namespace flowFields {
         // Frame-rate-independent fade
         float fade = fl::powf(0.5f, dt / vizConfig.persistence);
 
-        float aStep = spiral.angularStep;
-        float rStep = spiral.radialStep;
-        float frac  = spiral.blendFactor;
+        float aStep = workAngularStep;
+        float rStep = workRadialStep;
+        float frac  = workBlendFactor;
         float inv   = 1.0f - frac;
         bool  out   = spiral.outward;
 

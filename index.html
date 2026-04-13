@@ -874,10 +874,10 @@
             yFreq:  {min: 0.01, max: 10.00, default: 0.32, step: 0.01},
             xShift: {min: 0.1, max: 5, default: 1.5, step: 0.1},
             yShift: {min: 0.1, max: 5, default: 1.5, step: 0.1},
-            modAmpRate:  {min: 0.1, max: 3.0, default: 0.5, step: 0.1},
-            modAmpLevel: {min: 0, max: 2.0, default: 0.5, step: 0.1},
             modSpeedRate:  {min: 0.1, max: 3.0, default: 0.1, step: 0.1},
             modSpeedLevel: {min: 0, max: 2.0, default: 0.1, step: 0.1},
+            modAmpRate:  {min: 0.1, max: 3.0, default: 0.5, step: 0.1},
+            modAmpLevel: {min: 0, max: 2.0, default: 0.5, step: 0.1},
             modShiftRate:  {min: 0.1, max: 3.0, default: 0.5, step: 0.1},
             modShiftLevel: {min: 0, max: 2.0, default: 0.5, step: 0.1},
             
@@ -900,7 +900,13 @@
             modBreatheLevel: {min: 0, max: 2.0, default: 1.0, step: 0.1},
 
             // FLOW: spiral
-            angularStep: {min: 0.01, max: 1.0, default: 0.28, step: 0.01},
+            angularStep:          {min: 0.01, max: 1.0, default: 0.28, step: 0.01},
+            modAngularStepRate:   {min: 0.1, max: 3.0, default: 0.5, step: 0.1},
+            modAngularStepLevel:  {min: 0, max: 2.0, default: 0.5, step: 0.1},
+            modRadialStepRate:    {min: 0.1, max: 3.0, default: 0.5, step: 0.1},
+            modRadialStepLevel:   {min: 0, max: 2.0, default: 0.5, step: 0.1},
+            modBlendFactorRate:   {min: 0.1, max: 3.0, default: 0.5, step: 0.1},
+            modBlendFactorLevel:  {min: 0, max: 2.0, default: 0.5, step: 0.1},
         };
 
         // Parameter lists per component
@@ -919,11 +925,14 @@
         };
 
         const FLOW_PARAMS = {
-            "noise":       ["xSpeed", "ySpeed", "xAmp", "yAmp", "xFreq", "yFreq", "xShift", "yShift", "modAmpRate", "modAmpLevel", "modSpeedRate", "modSpeedLevel", "modShiftRate", "modShiftLevel"],
+            "noise":       ["xSpeed", "ySpeed", "xAmp", "yAmp", "xFreq", "yFreq", "xShift", "yShift", "modSpeedRate", "modSpeedLevel", "modAmpRate", "modAmpLevel", "modShiftRate", "modShiftLevel"],
             "radial":      ["radialStep", "blendFactor"],
             "directional": ["windStep", "blendFactor", "rotateSpeed", "waveAmp", "waveFreq", "waveSpeed"],
             "rings":       ["innerSwirl", "outerSwirl", "midDrift", "modBreatheRate", "modBreatheLevel"],
-            "spiral":      ["angularStep", "radialStep", "blendFactor"]
+            "spiral":      ["angularStep", "radialStep", "blendFactor",
+                            "modAngularStepRate", "modAngularStepLevel",
+                            "modRadialStepRate", "modRadialStepLevel",
+                            "modBlendFactorRate", "modBlendFactorLevel"]
         };
 
 
