@@ -289,19 +289,19 @@
              <div class = "control-group">
 
                 <control-checkbox 
-                    label="AngleFreezeX" 
+                    label="AxisFreezeX"
                     data-my-number="21"
                     data-emitters="cube"
                     unchecked>
                 </control-checkbox>
                 <control-checkbox 
-                    label="AngleFreezeY" 
+                    label="AxisFreezeY"
                     data-my-number="22"
                     data-emitters="cube"
                     unchecked>
                 </control-checkbox>
                 <control-checkbox
-                    label="AngleFreezeZ"
+                    label="AxisFreezeZ"
                     data-my-number="23"
                     data-emitters="cube"
                     unchecked>
@@ -858,9 +858,17 @@
 
             driftSpeed:  {min: 0.01, max: 5, default: 0.35, step: 0.01},
             scale:       {min: 0.5, max: 3.0, default: 1.0, step: 0.1},
-            angleRateX:  {min: -0.5, max: 0.5, default: 0.02, step: 0.001},
-            angleRateY:  {min: -0.5, max: 0.5, default: 0.03, step: 0.001},
-            angleRateZ:  {min: -0.5, max: 0.5, default: 0.01, step: 0.001},
+            rotateSpeedX:  {min: -0.5, max: 0.5, default: 0.02, step: 0.001},
+            rotateSpeedY:  {min: -0.5, max: 0.5, default: 0.03, step: 0.001},
+            rotateSpeedZ:  {min: -0.5, max: 0.5, default: 0.01, step: 0.001},
+            modScaleRate:          {min: 0.01, max: 2.0, default: 0.5, step: 0.01},
+            modScaleLevel:         {min: 0.0,  max: 2.0, default: 0.0, step: 0.01},
+            modRotateSpeedXRate:   {min: 0.01, max: 2.0, default: 0.5, step: 0.01},
+            modRotateSpeedXLevel:  {min: 0.0,  max: 2.0, default: 0.0, step: 0.01},
+            modRotateSpeedYRate:   {min: 0.01, max: 2.0, default: 0.5, step: 0.01},
+            modRotateSpeedYLevel:  {min: 0.0,  max: 2.0, default: 0.0, step: 0.01},
+            modRotateSpeedZRate:   {min: 0.01, max: 2.0, default: 0.5, step: 0.01},
+            modRotateSpeedZLevel:  {min: 0.0,  max: 2.0, default: 0.0, step: 0.01},
             noiseScale:  {min: 0.01, max: 0.15, default: 0.0375, step: 0.005},
             noiseBand:   {min: 0.05, max: 0.5, default: 0.1, step: 0.01},
             kaleidoGamma:{min: 0.2, max: 3.0, default: 0.65, step: 0.05},
@@ -921,7 +929,11 @@
             "lissajous":    ["lineSpeed", "lineAmp", "modLineSpeedRate", "modLineSpeedLevel"],
             "borderrect":   [],
             "noisekaleido": ["driftSpeed", "noiseScale", "noiseBand", "kaleidoGamma"],
-            "cube":         ["scale", "angleRateX", "angleRateY", "angleRateZ"]
+            "cube":         ["scale", "rotateSpeedX", "rotateSpeedY", "rotateSpeedZ",
+                            "modScaleRate", "modScaleLevel",
+                            "modRotateSpeedXRate", "modRotateSpeedXLevel",
+                            "modRotateSpeedYRate", "modRotateSpeedYLevel",
+                            "modRotateSpeedZRate", "modRotateSpeedZLevel"]
         };
 
         const FLOW_PARAMS = {

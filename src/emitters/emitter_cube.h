@@ -14,14 +14,20 @@ namespace flowFields {
 
     struct CubeParams {
         float scale = 1.0f;
-        float angleRate[3] = {0.02f, 0.03f, 0.01f};  // X, Y, Z rotation rates
-        bool angleFreeze[3] = {false, false, false};   // per-axis freeze toggles
+        float rotateSpeed[3] = {0.02f, 0.03f, 0.01f};  // X, Y, Z rotation rates
+        bool axisFreeze[3] = {false, false, false};   // per-axis freeze toggles
+
+        ModConfig modScale        = {0, 0.5f, 0.0f};  // modTimer, modRate, modLevel
+        ModConfig modRotateSpeedX = {1, 0.5f, 0.0f};
+        ModConfig modRotateSpeedY = {2, 0.5f, 0.0f};
+        ModConfig modRotateSpeedZ = {3, 0.5f, 0.0f};
     };
 
     CubeParams cube;
 
-    // Runtime state (not synced via cVars)
-    float angleDelta[3];
+    // Runtime working values prepared each frame by cubePrepare()
+    static float workScale = 1.0f;
+    static float workRotateSpeed[3] = {0.0f, 0.0f, 0.0f};
 
     // Cube vertices in 3D space
     float vertices[8][3] = {
@@ -96,16 +102,58 @@ namespace flowFields {
         
             // Perspective projection
             float scale = MIN_DIMENSION / 4; // 22.0
-            projected[i][0] = x3 * scale * cScale + WIDTH / 2.0;
-            projected[i][1] = y3 * scale * cScale + HEIGHT / 2.0;
+            projected[i][0] = x3 * scale * workScale + WIDTH / 2.0;
+            projected[i][1] = y3 * scale * workScale + HEIGHT / 2.0;
         }
     } // rotateCube()
 
     // ===============================================================================
 
-    void getAngleDeltas() {
-        for (uint8_t i = 0; i < 3; i++) {
-            angleDelta[i] = cube.angleFreeze[i] ? 0.0f : cube.angleRate[i];
+    static void cubePrepare(float t) {
+        (void)t;
+
+        const ModConfig& scaleMod = cube.modScale;
+        const ModConfig& rsxMod   = cube.modRotateSpeedX;
+        const ModConfig& rsyMod   = cube.modRotateSpeedY;
+        const ModConfig& rszMod   = cube.modRotateSpeedZ;
+
+        // -----------------------------------------------------------------
+        // 1) Plumbing: configure timer channels
+        // -----------------------------------------------------------------
+
+        timings.ratio[scaleMod.modTimer] = 0.0004f * scaleMod.modRate;
+        timings.ratio[rsxMod.modTimer]   = 0.0004f * rsxMod.modRate;
+        timings.ratio[rsyMod.modTimer]   = 0.00045f * rsyMod.modRate;
+        timings.ratio[rszMod.modTimer]   = 0.0005f * rszMod.modRate;
+
+        calculate_modulators(timings, 4);
+
+        // -----------------------------------------------------------------
+        // 2) Signal acquisition: centered bipolar control signals [-1, 1]
+        // -----------------------------------------------------------------
+
+        const float scaleSignal = move.directional_noise[scaleMod.modTimer];
+
+        const ModConfig* rsMods[3] = {&rsxMod, &rsyMod, &rszMod};
+        float rsSignal[3];
+        for (int i = 0; i < 3; i++) {
+            rsSignal[i] = move.directional_noise[rsMods[i]->modTimer];
+        }
+
+        // -----------------------------------------------------------------
+        // 3) Artistic application: decide what those signals mean
+        // -----------------------------------------------------------------
+
+        // Scale: orbitalDots-style modulation, clamped positive
+        workScale = cube.scale *
+            ((1.0f - scaleMod.modLevel) + scaleMod.modLevel * scaleSignal);
+        workScale = fmaxf(0.1f, workScale);
+
+        // RotateSpeed: orbitalDots-style per axis (allows reversals)
+        for (int i = 0; i < 3; i++) {
+            float speed = cube.rotateSpeed[i] *
+                ((1.0f - rsMods[i]->modLevel) + rsMods[i]->modLevel * rsSignal[i]);
+            workRotateSpeed[i] = cube.axisFreeze[i] ? 0.0f : speed;
         }
     }
 
@@ -113,6 +161,7 @@ namespace flowFields {
 
     static void emitCube(float t) {
 
+		cubePrepare(t);
 		rotateCube();
 
 		// Draw all edges with rainbow colors onto the float grid
@@ -129,10 +178,9 @@ namespace flowFields {
 		}
 
 		// Update rotation angles
-		getAngleDeltas();
-		angleX += angleDelta[0]; // 0.02;
-		angleY += angleDelta[1]; // 0.03;
-		angleZ += angleDelta[2]; // 0.01;
+		angleX += workRotateSpeed[0];
+		angleY += workRotateSpeed[1];
+		angleZ += workRotateSpeed[2];
 
     }
 

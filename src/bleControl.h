@@ -576,9 +576,9 @@ void processCheckbox(String receivedID, bool receivedValue ) {
 
    if (receivedID == "cx11") {mappingOverride = receivedValue;};
 
-   if (receivedID == "cx21") {cAngleFreezeX = receivedValue;};
-   if (receivedID == "cx22") {cAngleFreezeY = receivedValue;};
-   if (receivedID == "cx23") {cAngleFreezeZ = receivedValue;};
+   if (receivedID == "cx21") {cAxisFreezeX = receivedValue;};
+   if (receivedID == "cx22") {cAxisFreezeY = receivedValue;};
+   if (receivedID == "cx23") {cAxisFreezeZ = receivedValue;};
 
    if (receivedID == "cx31") {cOutward = receivedValue;};
    if (receivedID == "cx32") {cUseRainbow = receivedValue;};

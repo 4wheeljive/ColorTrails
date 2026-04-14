@@ -228,12 +228,20 @@ namespace flowFields {
         cKaleidoGamma = noiseKaleido.kaleidoGamma;
         // Emitter: cube
         cScale = cube.scale;
-        cAngleRateX = cube.angleRate[0];
-        cAngleRateY = cube.angleRate[1];
-        cAngleRateZ = cube.angleRate[2];
-        cAngleFreezeX = cube.angleFreeze[0];
-        cAngleFreezeY = cube.angleFreeze[1];
-        cAngleFreezeZ = cube.angleFreeze[2];
+        cRotateSpeedX = cube.rotateSpeed[0];
+        cRotateSpeedY = cube.rotateSpeed[1];
+        cRotateSpeedZ = cube.rotateSpeed[2];
+        cAxisFreezeX = cube.axisFreeze[0];
+        cAxisFreezeY = cube.axisFreeze[1];
+        cAxisFreezeZ = cube.axisFreeze[2];
+        cModScaleRate = cube.modScale.modRate;
+        cModScaleLevel = cube.modScale.modLevel;
+        cModRotateSpeedXRate = cube.modRotateSpeedX.modRate;
+        cModRotateSpeedXLevel = cube.modRotateSpeedX.modLevel;
+        cModRotateSpeedYRate = cube.modRotateSpeedY.modRate;
+        cModRotateSpeedYLevel = cube.modRotateSpeedY.modLevel;
+        cModRotateSpeedZRate = cube.modRotateSpeedZ.modRate;
+        cModRotateSpeedZLevel = cube.modRotateSpeedZ.modLevel;
     }
 
     // Read cVars into component structs (called every frame)
@@ -265,12 +273,20 @@ namespace flowFields {
         noiseKaleido.noiseBand = cNoiseBand;
         noiseKaleido.kaleidoGamma = cKaleidoGamma;
         cube.scale = cScale;
-        cube.angleRate[0] = cAngleRateX;
-        cube.angleRate[1] = cAngleRateY;
-        cube.angleRate[2] = cAngleRateZ;
-        cube.angleFreeze[0] = cAngleFreezeX;
-        cube.angleFreeze[1] = cAngleFreezeY;
-        cube.angleFreeze[2] = cAngleFreezeZ;
+        cube.rotateSpeed[0] = cRotateSpeedX;
+        cube.rotateSpeed[1] = cRotateSpeedY;
+        cube.rotateSpeed[2] = cRotateSpeedZ;
+        cube.axisFreeze[0] = cAxisFreezeX;
+        cube.axisFreeze[1] = cAxisFreezeY;
+        cube.axisFreeze[2] = cAxisFreezeZ;
+        cube.modScale.modRate = cModScaleRate;
+        cube.modScale.modLevel = cModScaleLevel;
+        cube.modRotateSpeedX.modRate = cModRotateSpeedXRate;
+        cube.modRotateSpeedX.modLevel = cModRotateSpeedXLevel;
+        cube.modRotateSpeedY.modRate = cModRotateSpeedYRate;
+        cube.modRotateSpeedY.modLevel = cModRotateSpeedYLevel;
+        cube.modRotateSpeedZ.modRate = cModRotateSpeedZRate;
+        cube.modRotateSpeedZ.modLevel = cModRotateSpeedZLevel;
         // Flow field + modulator
         syncFlowFromCVars();
     }

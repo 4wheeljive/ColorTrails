@@ -66,7 +66,11 @@ const char* const NOISEKALEIDO_PARAMS[] PROGMEM = {
    "driftSpeed", "noiseScale", "noiseBand", "kaleidoGamma"
 };
 const char* const CUBE_PARAMS[] PROGMEM = {
-   "scale", "angleRateX", "angleRateY", "angleRateZ"
+   "scale", "rotateSpeedX", "rotateSpeedY", "rotateSpeedZ",
+   "modScaleRate", "modScaleLevel",
+   "modRotateSpeedXRate", "modRotateSpeedXLevel",
+   "modRotateSpeedYRate", "modRotateSpeedYLevel",
+   "modRotateSpeedZRate", "modRotateSpeedZLevel"
 };
 
 // Struct to hold emitter name and parameter array reference
@@ -83,7 +87,7 @@ const EmitterParamEntry EMITTER_PARAM_LOOKUP[] PROGMEM = {
    {"lissajous", LISSAJOUS_PARAMS, 4},
    {"borderrect", BORDERRECT_PARAMS, 0},
    {"noisekaleido", NOISEKALEIDO_PARAMS, 4},
-   {"cube", CUBE_PARAMS, 4},
+   {"cube", CUBE_PARAMS, 12},
 };
 
 static const EmitterParamEntry* getEmitterParams(uint8_t emitterIdx) {
@@ -235,12 +239,20 @@ float cNoiseBand = 0.1f;
 float cKaleidoGamma = 0.65f;
 // cube
 float cScale = 1.f;
-float cAngleRateX = 0.02f;
-float cAngleRateY = 0.03f;
-float cAngleRateZ = 0.01f;
-bool cAngleFreezeX = false;
-bool cAngleFreezeY = false;
-bool cAngleFreezeZ = false;
+float cRotateSpeedX = 0.02f;
+float cRotateSpeedY = 0.03f;
+float cRotateSpeedZ = 0.01f;
+bool cAxisFreezeX = false;
+bool cAxisFreezeY = false;
+bool cAxisFreezeZ = false;
+float cModScaleRate = 0.5f;
+float cModScaleLevel = 0.0f;
+float cModRotateSpeedXRate = 0.5f;
+float cModRotateSpeedXLevel = 0.0f;
+float cModRotateSpeedYRate = 0.5f;
+float cModRotateSpeedYLevel = 0.0f;
+float cModRotateSpeedZRate = 0.5f;
+float cModRotateSpeedZLevel = 0.0f;
 
 // FLOWS -----------------------
 // shared
@@ -375,12 +387,20 @@ float cExpDecayFactor = 0.9f;
    X(float, ModBreatheRate, 1.0f) \
    X(float, ModBreatheLevel, 1.0f) \
    X(float, Scale, 1.0f) \
-   X(float, AngleRateX, 0.02f) \
-   X(float, AngleRateY, 0.03f) \
-   X(float, AngleRateZ, 0.01f) \
-   X(bool, AngleFreezeX, false) \
-   X(bool, AngleFreezeY, false) \
-   X(bool, AngleFreezeZ, false) \
+   X(float, RotateSpeedX, 0.02f) \
+   X(float, RotateSpeedY, 0.03f) \
+   X(float, RotateSpeedZ, 0.01f) \
+   X(bool, AxisFreezeX, false) \
+   X(bool, AxisFreezeY, false) \
+   X(bool, AxisFreezeZ, false) \
+   X(float, ModScaleRate, 0.5f) \
+   X(float, ModScaleLevel, 0.0f) \
+   X(float, ModRotateSpeedXRate, 0.5f) \
+   X(float, ModRotateSpeedXLevel, 0.0f) \
+   X(float, ModRotateSpeedYRate, 0.5f) \
+   X(float, ModRotateSpeedYLevel, 0.0f) \
+   X(float, ModRotateSpeedZRate, 0.5f) \
+   X(float, ModRotateSpeedZLevel, 0.0f) \
    X(float, AngularStep, 0.28f) \
    X(bool, Outward, false) \
    X(float, ModAngularStepRate, 0.5f) \
