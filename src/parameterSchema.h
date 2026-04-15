@@ -59,7 +59,9 @@ const char* const SWARMINGDOTS_PARAMS[] PROGMEM = {
 };
 const char* const AUDIODOTS_PARAMS[] PROGMEM = {};
 const char* const LISSAJOUS_PARAMS[] PROGMEM = {
-   "lineSpeed", "lineAmp", "modLineSpeedRate", "modLineSpeedLevel"
+   "lineSpeed", "lineAmp", "lineClamp",
+   "modLineSpeedRate", "modLineSpeedLevel",
+   "modLineAmpRate", "modLineAmpLevel"
 };
 const char* const BORDERRECT_PARAMS[] PROGMEM = {};
 const char* const NOISEKALEIDO_PARAMS[] PROGMEM = {
@@ -84,7 +86,7 @@ const EmitterParamEntry EMITTER_PARAM_LOOKUP[] PROGMEM = {
    {"orbitaldots", ORBITALDOTS_PARAMS, 8},
    {"swarmingdots", SWARMINGDOTS_PARAMS, 8},
    {"audiodots", AUDIODOTS_PARAMS, 0},
-   {"lissajous", LISSAJOUS_PARAMS, 4},
+   {"lissajous", LISSAJOUS_PARAMS, 7},
    {"borderrect", BORDERRECT_PARAMS, 0},
    {"noisekaleido", NOISEKALEIDO_PARAMS, 4},
    {"cube", CUBE_PARAMS, 12},
@@ -231,8 +233,11 @@ float cModSwarmSpreadLevel = 1.0f;
 // lissajous line
 float cLineSpeed = 0.35f;
 float cLineAmp = 13.5f;
+float cLineClamp = 0.0f;
 float cModLineSpeedRate = 1.0f;
 float cModLineSpeedLevel = 0.0f;
+float cModLineAmpRate = 0.5f;
+float cModLineAmpLevel = 0.0f;
 //noiseKaleido
 float cDriftSpeed = 0.35f;
 float cNoiseScale = 0.0375f;
@@ -356,8 +361,11 @@ float cExpDecayFactor = 0.9f;
    X(float, ModSwarmSpreadRate, 1.0f) \
    X(float, ModSwarmSpreadLevel, 1.0f) \
    X(float, LineSpeed, 0.35f) \
+   X(float, LineClamp, 0.0f) \
    X(float, ModLineSpeedRate, 1.0f) \
    X(float, ModLineSpeedLevel, 0.0f) \
+   X(float, ModLineAmpRate, 0.5f) \
+   X(float, ModLineAmpLevel, 0.0f) \
    X(float, DriftSpeed, 0.35f) \
    X(float, NoiseScale, 0.0375f) \
    X(float, NoiseBand, 0.1f) \

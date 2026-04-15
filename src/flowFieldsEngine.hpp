@@ -218,8 +218,11 @@ namespace flowFields {
         // Emitter: lissajous / borderRect
         cLineSpeed = lissajous.lineSpeed;
         cLineAmp = lissajous.lineAmp;
+        cLineClamp = lissajous.lineClamp;
         cModLineSpeedRate = lissajous.modLineSpeed.modRate;
         cModLineSpeedLevel = lissajous.modLineSpeed.modLevel;
+        cModLineAmpRate = lissajous.modLineAmp.modRate;
+        cModLineAmpLevel = lissajous.modLineAmp.modLevel;
         // Emitter: noiseKaleido
         cDriftSpeed = noiseKaleido.driftSpeed;
         cNoiseScale = noiseKaleido.noiseScale;
@@ -266,8 +269,11 @@ namespace flowFields {
         swarmingDots.dotDiam = cDotDiam;
         lissajous.lineSpeed = cLineSpeed;
         lissajous.lineAmp = cLineAmp;
+        lissajous.lineClamp = (uint8_t)cLineClamp;
         lissajous.modLineSpeed.modRate = cModLineSpeedRate;
         lissajous.modLineSpeed.modLevel = cModLineSpeedLevel;
+        lissajous.modLineAmp.modRate = cModLineAmpRate;
+        lissajous.modLineAmp.modLevel = cModLineAmpLevel;
         noiseKaleido.driftSpeed = cDriftSpeed;
         noiseKaleido.noiseScale = cNoiseScale;
         noiseKaleido.noiseBand = cNoiseBand;
