@@ -124,7 +124,6 @@ namespace flowFields {
             }
         }
 
-
         // ISSUE: Per Claude: The gradients are ±1, and xf is 0–1.
         // At the theoretical max (xf=0.5, opposing gradients): ga=0.5, gb=0.5, u=0.5 → output = 0.5. 
         // The actual range is ±0.5, not ±1.

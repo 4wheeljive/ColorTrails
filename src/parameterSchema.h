@@ -457,20 +457,20 @@ float cExpDecayFactor = 0.9f;
    X(float, ModRadialStepLevel, 0.5f) \
    X(float, ModBlendFactorRate, 0.5f) \
    X(float, ModBlendFactorLevel, 0.5f) \
-   X(float, JetDensity, 60.0f) \
-   X(float, JetForce, 0.35f) \
+   X(float, JetDensity, 50.0f) \
+   X(float, JetForce, 0.25f) \
    X(float, JetRadius, 2.0f) \
    X(float, JetSpread, 1.0f) \
    X(float, JetAngle, 0.0f) \
-   X(float, JetHueSpeed, 0.69f) \
-   X(float, ModJetForceRate, 0.5f) \
-   X(float, ModJetForceLevel, 0.0f) \
-   X(float, ModAngleRate, 0.5f) \
-   X(float, ModAngleLevel, 0.0f) \
-   X(float, Viscosity, 0.0f) \
-   X(float, Diffusion, 0.0f) \
-   X(float, VelocityDissipation, 0.5f) \
-   X(float, DyeDissipation, 0.5f) \
+   X(float, JetHueSpeed, 0.7f) \
+   X(float, ModJetForceRate, 0.3f) \
+   X(float, ModJetForceLevel, 0.1f) \
+   X(float, ModAngleRate, 0.3f) \
+   X(float, ModAngleLevel, 2.0f) \
+   X(float, Viscosity, 0.0005f) \
+   X(float, Diffusion, 0.0005f) \
+   X(float, VelocityDissipation, 0.75f) \
+   X(float, DyeDissipation, 0.25f) \
    X(float, Vorticity, 7.0f) \
    X(float, Gravity, 0.3f) \
    X(float, SolverIterations, 5.0f) \

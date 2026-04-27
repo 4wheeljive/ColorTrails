@@ -74,9 +74,9 @@ namespace flowFields {
         // -----------------------------------------------------------------
         
         // Speed modulation signal (centered around 1.0f, no reversals)
-        const float speedSignal = move.directional_noise_norm[speedMod.modTimer]; // 0..1
+        const float speedSignal = move.normalized_noise[speedMod.modTimer]; // 0..1
        
-        float modSpread = move.directional_noise_norm[spreadMod.modTimer];
+        float modSpread = move.normalized_noise[spreadMod.modTimer];
        
         // -----------------------------------------------------------------
         // 3) Artistic application: speed and spread modulation; position dots

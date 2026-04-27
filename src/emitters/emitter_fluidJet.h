@@ -20,15 +20,15 @@ namespace flowFields {
     FL_OPTIMIZATION_LEVEL_O3_BEGIN
 
     struct FluidJetParams {
-        float jetDensity   = 120.0f;     // dye magnitude (per layer-weighted)
-        float jetForce     = 0.87f;      // velocity magnitude
-        float jetRadius    = 4.0f;       // gaussian splat radius (cells)
-        float jetSpread    = 0.0f;       // side-injection lateral velocity
+        float jetDensity   = 50.0f;     // dye magnitude (per layer-weighted)
+        float jetForce     = 0.25f;      // velocity magnitude
+        float jetRadius    = 2.0f;       // gaussian splat radius (cells)
+        float jetSpread    = 1.0f;       // side-injection lateral velocity
         float jetAngle     = 0.0f;       // base direction (radians; 0 = straight up)
-        float jetHueSpeed  = 0.69f;      // hue rotation rate (Hz)
+        float jetHueSpeed  = 0.7f;      // hue rotation rate (Hz)
 
-        ModConfig modJetForce = {0, 0.5f, 0.0f};   // modTimer, modRate, modLevel
-        ModConfig modAngle    = {1, 0.5f, 0.0f};   // modLevel: 0 = no movement, 2 = full ±90°
+        ModConfig modJetForce = {0, 0.3f, 0.1f};   // modTimer, modRate, modLevel
+        ModConfig modAngle    = {1, 0.3f, 2.0f};   // modLevel: 0 = no movement, 2 = full ±90°
     };
 
     FluidJetParams fluidJet;
@@ -73,13 +73,14 @@ namespace flowFields {
         calculate_modulators(timings, 2);
 
         // ─── 2) Signal acquisition ─────────────────────────────────
-        const float forceSignal = move.directional_noise[forceMod.modTimer];
+        //const float forceSignal = move.directional_noise[forceMod.modTimer];
+        const float forceSignal = move.normalized_noise[forceMod.modTimer];
         const float angleSignal = move.directional_noise[angleMod.modTimer];
 
         // ─── 3) Artistic application ───────────────────────────────
         // Force: orbitalDots-style bipolar modulation
-        const float currentForce = fluidJet.jetForce *
-            ((1.0f - forceMod.modLevel) + forceMod.modLevel * forceSignal);
+        const float currentForce = fluidJet.jetForce * (1.0f + forceSignal * 0.4f);
+            //((1.0f - forceMod.modLevel) + forceMod.modLevel * forceSignal);
 
         // Angle: noise-based offset around base direction.
         // Coefficient π/4 per modLevel unit → modLevel=2 reaches full ±π/2 (±90°).
