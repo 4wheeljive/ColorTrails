@@ -17,6 +17,7 @@
 //  Ported from colorTrailsOrig/navier_stokes_1.py.
 
 #include "flowFieldsTypes.h"
+#include "modulators.h"
 
 namespace flowFields {
     FL_FAST_MATH_BEGIN
@@ -30,9 +31,16 @@ namespace flowFields {
         float vorticity           = 0.0f;     // confinement strength (0 = disabled)
         float gravity             = 0.0f;     // uniform vertical force on v
         uint8_t solverIterations  = 3;        // Jacobi passes per lin_solve
+
+        ModConfig modVelDissip = {0, 0.5f, 0.0f};   // modTimer, modRate, modLevel
+        ModConfig modDyeDissip = {1, 0.5f, 0.0f};
     };
 
     FluidParams fluid;
+
+    // Working values prepared each frame by fluidPrepare()
+    static float workVelDissip = 0.5f;
+    static float workDyeDissip = 0.5f;
 
     // Persistent simulation state (survives across frames)
     static float u[HEIGHT][WIDTH], v[HEIGHT][WIDTH];
@@ -218,7 +226,27 @@ namespace flowFields {
     //  Pipeline entry points
     // ───────────────────────────────────────────────────────────────
     static void fluidPrepare() {
-        // No precomputation needed — sim state evolves in advect step.
+        const ModConfig& velMod = fluid.modVelDissip;
+        const ModConfig& dyeMod = fluid.modDyeDissip;
+
+        // 1) Plumbing
+        timings.ratio[velMod.modTimer] = 0.0004f  * velMod.modRate;
+        timings.ratio[dyeMod.modTimer] = 0.00045f * dyeMod.modRate;
+        calculate_modulators(timings, 2);
+
+        // 2) Signal acquisition: bipolar [-1, 1]
+        const float velSignal = move.directional_noise[velMod.modTimer];
+        const float dySignal  = move.directional_noise[dyeMod.modTimer];
+
+        // 3) Artistic application: orbitalDots-style bipolar modulation,
+        //    clamped to [0.01, 1.0] to keep dissipation values stable.
+        workVelDissip = fluid.velocityDissipation *
+            ((1.0f - velMod.modLevel) + velMod.modLevel * velSignal);
+        workVelDissip = fmaxf(0.01f, fminf(1.0f, workVelDissip));
+
+        workDyeDissip = fluid.dyeDissipation *
+            ((1.0f - dyeMod.modLevel) + dyeMod.modLevel * dySignal);
+        workDyeDissip = fmaxf(0.01f, fminf(1.0f, workDyeDissip));
     }
 
     static void fluidAdvect() {
@@ -270,8 +298,8 @@ namespace flowFields {
         advectField(0, gB, tB, u, v, dt);
 
         // ─── DISSIPATION ───────────────────────────────────────────
-        const float fadeVel = fl::powf(fluid.velocityDissipation, dt);
-        const float fadeDye = fl::powf(fluid.dyeDissipation,      dt);
+        const float fadeVel = fl::powf(workVelDissip, dt);
+        const float fadeDye = fl::powf(workDyeDissip, dt);
         for (int y = 0; y < HEIGHT; y++) {
             for (int xc = 0; xc < WIDTH; xc++) {
                 u[y][xc]  *= fadeVel;

@@ -877,6 +877,18 @@
             noiseBand:   {min: 0.05, max: 0.5, default: 0.1, step: 0.01},
             kaleidoGamma:{min: 0.2, max: 3.0, default: 0.65, step: 0.05},
 
+            // EMITTER: fluidJet
+            jetDensity:    {min: 0, max: 200, default: 50, step: 1},
+            jetForce:      {min: 0, max: 5, default: 0.35, step: 0.05},
+            jetRadius:     {min: 1, max: 10, default: 2, step: 0.5},
+            jetSpread:     {min: 0, max: 60, default: 1, step: 1},
+            jetHueSpeed:   {min: 0, max: 1.5, default: 0.7, step: 0.05},
+            modJetForceRate:  {min: 0.1, max: 3.0, default: 0.5, step: 0.1},
+            modJetForceLevel: {min: 0, max: 2.0, default: 0.0, step: 0.1},
+            modAngleRate:     {min: 0.1, max: 3.0, default: 0.5, step: 0.1},
+            modAngleLevel:    {min: 0, max: 2.0, default: 0.0, step: 0.1},
+
+
             // FLOW: noise
             xSpeed: {min: -5, max: 5, default: 0.15, step: 0.01},
             ySpeed: {min: -5, max: 5, default: 0.15, step: 0.01},
@@ -920,28 +932,18 @@
             modBlendFactorRate:   {min: 0.1, max: 3.0, default: 0.5, step: 0.1},
             modBlendFactorLevel:  {min: 0, max: 2.0, default: 0.5, step: 0.1},
 
-            // EMITTER: fluidJet
-            jetDensity:    {min: 0, max: 200, default: 120, step: 1},
-            jetForce:      {min: 0, max: 5, default: 0.87, step: 0.05},
-            jetRadius:     {min: 1, max: 10, default: 4, step: 0.5},
-            jetSpread:     {min: 0, max: 60, default: 0, step: 1},
-            jetAngle:      {min: -1.5, max: 1.5, default: 0, step: 0.05},
-            jetSwingAmp:   {min: 0, max: 1.5, default: 0.58, step: 0.05},
-            jetSwingSpeed: {min: 0, max: 1.5, default: 0.28, step: 0.02},
-            jetHueSpeed:   {min: 0, max: 1.5, default: 0.69, step: 0.02},
-            modJetForceRate:  {min: 0.1, max: 3.0, default: 0.5, step: 0.1},
-            modJetForceLevel: {min: 0, max: 2.0, default: 0.0, step: 0.1},
-            modJetSwingRate:  {min: 0.1, max: 3.0, default: 0.5, step: 0.1},
-            modJetSwingLevel: {min: 0, max: 2.0, default: 0.0, step: 0.1},
-
             // FLOW: fluid
-            viscosity:           {min: 0, max: 0.01, default: 0, step: 0.0005},
-            diffusion:           {min: 0, max: 0.01, default: 0, step: 0.0005},
-            velocityDissipation: {min: 0.01, max: 1.0, default: 0.5, step: 0.01},
-            dyeDissipation:      {min: 0.01, max: 1.0, default: 0.5, step: 0.01},
-            vorticity:           {min: 0, max: 8, default: 0, step: 0.1},
-            gravity:             {min: -5, max: 5, default: 0, step: 0.1},
+            viscosity:           {min: 0, max: 0.01, default: 0.0005, step: 0.0005},
+            diffusion:           {min: 0, max: 0.01, default: 0.0005, step: 0.0005},
+            velocityDissipation: {min: 0.01, max: 1.0, default: 0.7, step: 0.01},
+            dyeDissipation:      {min: 0.01, max: 1.0, default: 0.3, step: 0.01},
+            vorticity:           {min: 0, max: 8, default: 7, step: 0.1},
+            gravity:             {min: -5, max: 5, default: .3, step: 0.1},
             solverIterations:    {min: 2, max: 10, default: 3, step: 1},
+            modVelDissipRate:    {min: 0.1, max: 3.0, default: 0.5, step: 0.1},
+            modVelDissipLevel:   {min: 0, max: 1.0, default: 0.0, step: 0.05},
+            modDyeDissipRate:    {min: 0.1, max: 3.0, default: 0.5, step: 0.1},
+            modDyeDissipLevel:   {min: 0, max: 1.0, default: 0.0, step: 0.05},
         };
 
         // Parameter lists per component
@@ -961,10 +963,9 @@
                             "modRotateSpeedXRate", "modRotateSpeedXLevel",
                             "modRotateSpeedYRate", "modRotateSpeedYLevel",
                             "modRotateSpeedZRate", "modRotateSpeedZLevel"],
-            "fluidjet":     ["jetDensity", "jetForce", "jetRadius", "jetSpread",
-                            "jetAngle", "jetSwingAmp", "jetSwingSpeed", "jetHueSpeed",
+            "fluidjet":     ["jetDensity", "jetForce", "jetRadius", "jetSpread", "jetHueSpeed",
                             "modJetForceRate", "modJetForceLevel",
-                            "modJetSwingRate", "modJetSwingLevel"]
+                            "modAngleRate", "modAngleLevel"]
         };
 
         const FLOW_PARAMS = {
@@ -977,7 +978,9 @@
                             "modRadialStepRate", "modRadialStepLevel",
                             "modBlendFactorRate", "modBlendFactorLevel"],
             "fluid":       ["viscosity", "diffusion", "velocityDissipation", "dyeDissipation",
-                            "vorticity", "gravity", "solverIterations"]
+                            "vorticity", "gravity", "solverIterations",
+                            "modVelDissipRate", "modVelDissipLevel",
+                            "modDyeDissipRate", "modDyeDissipLevel"]
         };
 
 

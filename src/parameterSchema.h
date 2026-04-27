@@ -76,10 +76,9 @@ const char* const CUBE_PARAMS[] PROGMEM = {
    "modRotateSpeedZRate", "modRotateSpeedZLevel"
 };
 const char* const FLUIDJET_PARAMS[] PROGMEM = {
-   "jetDensity", "jetForce", "jetRadius", "jetSpread",
-   "jetAngle", "jetSwingAmp", "jetSwingSpeed", "jetHueSpeed",
+   "jetDensity", "jetForce", "jetRadius", "jetSpread", "jetHueSpeed",
    "modJetForceRate", "modJetForceLevel",
-   "modJetSwingRate", "modJetSwingLevel"
+   "modAngleRate", "modAngleLevel"
 };
 
 // Struct to hold emitter name and parameter array reference
@@ -97,7 +96,7 @@ const EmitterParamEntry EMITTER_PARAM_LOOKUP[] PROGMEM = {
    {"borderrect", BORDERRECT_PARAMS, 0},
    {"noisekaleido", NOISEKALEIDO_PARAMS, 4},
    {"cube", CUBE_PARAMS, 12},
-   {"fluidjet", FLUIDJET_PARAMS, 12},
+   {"fluidjet", FLUIDJET_PARAMS, 9},
 };
 
 static const EmitterParamEntry* getEmitterParams(uint8_t emitterIdx) {
@@ -147,7 +146,9 @@ const char* const SPIRAL_PARAMS[] PROGMEM = {
 };
 const char* const FLUID_PARAMS[] PROGMEM = {
    "viscosity", "diffusion", "velocityDissipation", "dyeDissipation",
-   "vorticity", "gravity", "solverIterations"
+   "vorticity", "gravity", "solverIterations",
+   "modVelDissipRate", "modVelDissipLevel",
+   "modDyeDissipRate", "modDyeDissipLevel"
 };
 // Note: spiral reuses shared cVars radialStep and blendFactor
 
@@ -164,7 +165,7 @@ const FlowParamEntry FLOW_PARAM_LOOKUP[] PROGMEM = {
    {"directional", DIRECTIONAL_PARAMS, 6},
    {"rings", RINGS_PARAMS, 5},
    {"spiral", SPIRAL_PARAMS, 9},
-   {"fluid", FLUID_PARAMS, 7}
+   {"fluid", FLUID_PARAMS, 11}
 };
 
 static const FlowParamEntry* getFlowParams(uint8_t flowIdx) {
@@ -274,18 +275,16 @@ float cModRotateSpeedYLevel = 0.0f;
 float cModRotateSpeedZRate = 0.5f;
 float cModRotateSpeedZLevel = 0.0f;
 // fluidJet
-float cJetDensity = 120.0f;
-float cJetForce = 0.87f;
-float cJetRadius = 4.0f;
-float cJetSpread = 0.0f;
+float cJetDensity = 60.0f;
+float cJetForce = 0.35f;
+float cJetRadius = 2.0f;
+float cJetSpread = 1.0f;
 float cJetAngle = 0.0f;
-float cJetSwingAmp = 0.58f;
-float cJetSwingSpeed = 0.28f;
 float cJetHueSpeed = 0.69f;
 float cModJetForceRate = 0.5f;
 float cModJetForceLevel = 0.0f;
-float cModJetSwingRate = 0.5f;
-float cModJetSwingLevel = 0.0f;
+float cModAngleRate = 0.5f;
+float cModAngleLevel = 0.0f;
 
 // FLOWS -----------------------
 // shared
@@ -333,9 +332,13 @@ float cViscosity = 0.0f;
 float cDiffusion = 0.0f;
 float cVelocityDissipation = 0.5f;
 float cDyeDissipation = 0.5f;
-float cVorticity = 0.0f;
-float cGravity = 0.0f;
-float cSolverIterations = 3.0f;
+float cVorticity = 7.0f;
+float cGravity = 0.3f;
+float cSolverIterations = 5.0f;
+float cModVelDissipRate = 0.5f;
+float cModVelDissipLevel = 0.0f;
+float cModDyeDissipRate = 0.5f;
+float cModDyeDissipLevel = 0.0f;
 
 // AUDIO -----------------------
 bool maxBins = false;
@@ -454,22 +457,24 @@ float cExpDecayFactor = 0.9f;
    X(float, ModRadialStepLevel, 0.5f) \
    X(float, ModBlendFactorRate, 0.5f) \
    X(float, ModBlendFactorLevel, 0.5f) \
-   X(float, JetDensity, 120.0f) \
-   X(float, JetForce, 0.87f) \
-   X(float, JetRadius, 4.0f) \
-   X(float, JetSpread, 0.0f) \
+   X(float, JetDensity, 60.0f) \
+   X(float, JetForce, 0.35f) \
+   X(float, JetRadius, 2.0f) \
+   X(float, JetSpread, 1.0f) \
    X(float, JetAngle, 0.0f) \
-   X(float, JetSwingAmp, 0.58f) \
-   X(float, JetSwingSpeed, 0.28f) \
    X(float, JetHueSpeed, 0.69f) \
    X(float, ModJetForceRate, 0.5f) \
    X(float, ModJetForceLevel, 0.0f) \
-   X(float, ModJetSwingRate, 0.5f) \
-   X(float, ModJetSwingLevel, 0.0f) \
+   X(float, ModAngleRate, 0.5f) \
+   X(float, ModAngleLevel, 0.0f) \
    X(float, Viscosity, 0.0f) \
    X(float, Diffusion, 0.0f) \
    X(float, VelocityDissipation, 0.5f) \
    X(float, DyeDissipation, 0.5f) \
-   X(float, Vorticity, 0.0f) \
-   X(float, Gravity, 0.0f) \
-   X(float, SolverIterations, 3.0f)
+   X(float, Vorticity, 7.0f) \
+   X(float, Gravity, 0.3f) \
+   X(float, SolverIterations, 5.0f) \
+   X(float, ModVelDissipRate, 0.5f) \
+   X(float, ModVelDissipLevel, 0.0f) \
+   X(float, ModDyeDissipRate, 0.5f) \
+   X(float, ModDyeDissipLevel, 0.0f)

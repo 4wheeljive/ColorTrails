@@ -1,5 +1,5 @@
-This project began with this Reddit post from StefanPetrick:
-(https://www.reddit.com/r/FastLED/comments/1rny5j3/i_used_codex_for_the_first_time/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button)
+This project began with this Reddit post from Stefan Petrick:
+(https://www.reddit.com/r/FastLED/comments/1rny5j3/i_used_codex_for_the_first_time)
 
 Quoting/paraphrasing Stefan:
 
@@ -26,10 +26,12 @@ Each flow follows its own different rules and can produce characteristic outputs
 
 FlowFields can be run on two different ESP32 platforms from a single codebase:
 
-| Target | Board | LED Driver | BLE | Build |
-|--------|-------|-----------|-----|-------|
-| **ESP32-S3** | Seeed XIAO ESP32S3 | RMT | On-chip | VSCode PlatformIO button |
-| **ESP32-P4** | Waveshare ESP32-P4-WIFI6 | PARLIO | Companion ESP32-C6 via ESP-Hosted VHCI over SDIO | CLI (see below) |
+| Target       | Board              | LED Driver | BLE                        | Build                    |
+|--------------|--------------------|------------|----------------------------|--------------------------|
+| **ESP32-S3** | Seeed XIAO ESP32S3 | RMT        | On-chip                    | VSCode PlatformIO button |
+| **ESP32-P4** | ESP32-P4-WIFI6     | PARLIO     | Companion ESP32-C6 via     | CLI (see below)          |
+|              | (Waveshare)        |            | ESP-Hosted VHCI over SDIO  |                          |
+                 
 
 ### How It Works
 

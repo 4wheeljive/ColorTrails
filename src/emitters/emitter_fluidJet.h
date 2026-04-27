@@ -20,17 +20,15 @@ namespace flowFields {
     FL_OPTIMIZATION_LEVEL_O3_BEGIN
 
     struct FluidJetParams {
-        float jetDensity     = 120.0f;   // dye magnitude (per layer-weighted)
-        float jetForce       = 0.87f;    // velocity magnitude
-        float jetRadius      = 4.0f;     // gaussian splat radius (cells)
-        float jetSpread      = 0.0f;     // side-injection lateral velocity
-        float jetAngle       = 0.0f;     // base direction (radians; 0 = straight up)
-        float jetSwingAmp    = 0.58f;    // swing amplitude (radians, ~33°)
-        float jetSwingSpeed  = 0.28f;    // swing rate (Hz)
-        float jetHueSpeed    = 0.69f;    // hue rotation rate (Hz)
+        float jetDensity   = 120.0f;     // dye magnitude (per layer-weighted)
+        float jetForce     = 0.87f;      // velocity magnitude
+        float jetRadius    = 4.0f;       // gaussian splat radius (cells)
+        float jetSpread    = 0.0f;       // side-injection lateral velocity
+        float jetAngle     = 0.0f;       // base direction (radians; 0 = straight up)
+        float jetHueSpeed  = 0.69f;      // hue rotation rate (Hz)
 
         ModConfig modJetForce = {0, 0.5f, 0.0f};   // modTimer, modRate, modLevel
-        ModConfig modJetSwing = {1, 0.5f, 0.0f};
+        ModConfig modAngle    = {1, 0.5f, 0.0f};   // modLevel: 0 = no movement, 2 = full ±90°
     };
 
     FluidJetParams fluidJet;
@@ -67,35 +65,30 @@ namespace flowFields {
 
     static void emitFluidJet() {
         const ModConfig& forceMod = fluidJet.modJetForce;
-        const ModConfig& swingMod = fluidJet.modJetSwing;
+        const ModConfig& angleMod = fluidJet.modAngle;
 
         // ─── 1) Plumbing: configure timer channels ─────────────────
-        timings.ratio[forceMod.modTimer] = 0.0004f * forceMod.modRate;
-        timings.ratio[swingMod.modTimer] = 0.00045f * swingMod.modRate;
+        timings.ratio[forceMod.modTimer] = 0.0004f  * forceMod.modRate;
+        timings.ratio[angleMod.modTimer] = 0.00045f * angleMod.modRate;
         calculate_modulators(timings, 2);
 
         // ─── 2) Signal acquisition ─────────────────────────────────
         const float forceSignal = move.directional_noise[forceMod.modTimer];
-        const float swingSignal = move.directional_noise[swingMod.modTimer];
+        const float angleSignal = move.directional_noise[angleMod.modTimer];
 
         // ─── 3) Artistic application ───────────────────────────────
         // Force: orbitalDots-style bipolar modulation
         const float currentForce = fluidJet.jetForce *
             ((1.0f - forceMod.modLevel) + forceMod.modLevel * forceSignal);
 
-        // Swing amplitude: bipolar modulation
-        const float currentSwingAmp = fluidJet.jetSwingAmp *
-            ((1.0f - swingMod.modLevel) + swingMod.modLevel * swingSignal);
+        // Angle: noise-based offset around base direction.
+        // Coefficient π/4 per modLevel unit → modLevel=2 reaches full ±π/2 (±90°).
+        constexpr float ANGLE_SCALE = CT_2PI * 0.125f;   // π/4
+        const float angleOffset = angleMod.modLevel * ANGLE_SCALE * angleSignal;
 
-        // Swing animation: sinusoidal angle wobble around base direction.
-        // Wrap to [0, 2π) — sin_fast/cos_fast/sincos_fast cast through uint32_t,
-        // which is UB for negative inputs and overflows past ~256 cycles.
+        // Wrap final angle to [0, 2π) for sincos_fast (UB for negative inputs).
         constexpr float INV_2PI = 1.0f / CT_2PI;
-        float swingArg = fluidJet.jetSwingSpeed * t * CT_2PI;
-        swingArg -= fl::floorf(swingArg * INV_2PI) * CT_2PI;
-        const float swing = currentSwingAmp * sin_fast(swingArg);
-
-        float angle = fluidJet.jetAngle + swing;
+        float angle = fluidJet.jetAngle + angleOffset;
         angle -= fl::floorf(angle * INV_2PI) * CT_2PI;
 
         // Direction decomposition: angle 0 = straight up (negative y)

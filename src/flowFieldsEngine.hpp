@@ -155,6 +155,10 @@ namespace flowFields {
                 cVorticity = fluid.vorticity;
                 cGravity = fluid.gravity;
                 cSolverIterations = (float)fluid.solverIterations;
+                cModVelDissipRate = fluid.modVelDissip.modRate;
+                cModVelDissipLevel = fluid.modVelDissip.modLevel;
+                cModDyeDissipRate = fluid.modDyeDissip.modRate;
+                cModDyeDissipLevel = fluid.modDyeDissip.modLevel;
                 break;
             }
             default: break;
@@ -214,6 +218,10 @@ namespace flowFields {
         fluid.vorticity = cVorticity;
         fluid.gravity = cGravity;
         fluid.solverIterations = (uint8_t)cSolverIterations;
+        fluid.modVelDissip.modRate = cModVelDissipRate;
+        fluid.modVelDissip.modLevel = cModVelDissipLevel;
+        fluid.modDyeDissip.modRate = cModDyeDissipRate;
+        fluid.modDyeDissip.modLevel = cModDyeDissipLevel;
     }
 
     // Push emitter + universal defaults into cVars (called on emitter/mode change)
@@ -274,13 +282,11 @@ namespace flowFields {
         cJetRadius = fluidJet.jetRadius;
         cJetSpread = fluidJet.jetSpread;
         cJetAngle = fluidJet.jetAngle;
-        cJetSwingAmp = fluidJet.jetSwingAmp;
-        cJetSwingSpeed = fluidJet.jetSwingSpeed;
         cJetHueSpeed = fluidJet.jetHueSpeed;
         cModJetForceRate = fluidJet.modJetForce.modRate;
         cModJetForceLevel = fluidJet.modJetForce.modLevel;
-        cModJetSwingRate = fluidJet.modJetSwing.modRate;
-        cModJetSwingLevel = fluidJet.modJetSwing.modLevel;
+        cModAngleRate = fluidJet.modAngle.modRate;
+        cModAngleLevel = fluidJet.modAngle.modLevel;
     }
 
     // Read cVars into component structs (called every frame)
@@ -336,13 +342,11 @@ namespace flowFields {
         fluidJet.jetRadius = cJetRadius;
         fluidJet.jetSpread = cJetSpread;
         fluidJet.jetAngle = cJetAngle;
-        fluidJet.jetSwingAmp = cJetSwingAmp;
-        fluidJet.jetSwingSpeed = cJetSwingSpeed;
         fluidJet.jetHueSpeed = cJetHueSpeed;
         fluidJet.modJetForce.modRate = cModJetForceRate;
         fluidJet.modJetForce.modLevel = cModJetForceLevel;
-        fluidJet.modJetSwing.modRate = cModJetSwingRate;
-        fluidJet.modJetSwing.modLevel = cModJetSwingLevel;
+        fluidJet.modAngle.modRate = cModAngleRate;
+        fluidJet.modAngle.modLevel = cModAngleLevel;
         // Flow field + modulator
         syncFlowFromCVars();
     }

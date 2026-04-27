@@ -59,3 +59,21 @@ The interrelation: The final displacement for a given row/column is profile_valu
 - Both low: Gentle variation AND small displacement — subtle, dreamy drift.
 
 In short: amp shapes the noise curve, shift scales the displacement. Amp is about where on the grid things move differently; shift is about how far they move.
+
+
+## powf() vs fastpow()
+
+Is there a reason why the dissipation stage in flow_fluid.h uses powf() instead of a fastpow()?
+The dissipation powf calls happen once per frame (just two of them — one for velocity, one for dye), with the result used as a scalar multiplier inside the per-cell loop. So the cost is two libm powf calls per frame, totaling roughly 200 ns. Not measurable.
+
+fastpow is designed for hot inner loops — places where it's called per cell (like the Gaussian splat, where I do use it). There it pays off: 432-ish calls per frame × 10-20× speedup = real time saved.
+
+The reason I used fl::powf here:
+
+Consistency with the rest of the project. All the other flows compute their fade factor with fl::powf(0.5f, dt / persistence). Standardizing on the same primitive for once-per-frame fade calculations keeps the dissipation math obviously correct at a glance.
+
+Accuracy matters more than speed at this site. The fade factor is then multiplied into 5 grids (u, v, gR, gG, gB) of every cell. A 5% error in fastpow would systematically bias the decay rate of the entire simulation each frame — slow drift over time vs the user's intended dissipation slider value. Even if visually fine, it'd make the slider less predictable.
+
+fastpow is documented as "for base in [0,1]" with ~5% error. Our dissipation values are in [0,1] so it would work, but the ~5% error compounds frame to frame. fl::powf is exact (modulo FP rounding) and the cost is invisible.
+
+If you wanted to switch it to fastpow, it would still work — the visual effect is unlikely to be noticeable. But there's no FPS to recover by doing so. The cycles are spent inside the Jacobi solver, not in setup math.
